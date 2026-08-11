@@ -320,10 +320,9 @@ body {
   isolation: isolate;
 }
 
-/* The deck no longer shares its row, so it can be wide enough that the metadata
-   column stops truncating song titles. */
+/* Narrower now that the player is square rather than 356px wide. */
 .console-mount > .player-deck {
-  width: min(44rem, 62vw);
+  width: min(34rem, 52vw);
 }
 
 /* Short landscape windows leave barely enough wall below the glass, so the band
@@ -416,13 +415,19 @@ body {
   flex-direction: column;
 }
 
-/* The player is the deck's cassette window. Sizing is compliance (§6): never
-   below 200px tall, and the ratio yields to that floor on narrow screens. */
+/*
+ * The player is the deck's cassette window, at the smallest size YouTube's
+ * Required Minimum Functionality allows: 200x200. Square rather than 16:9, which
+ * costs 44% less of the carriage than 356x200 did — YouTube letterboxes the video
+ * inside, and black bars in a slot read as a deck screen rather than as a defect.
+ *
+ * 200 is a floor, not a preference. Below it the embed can be blocked outright,
+ * which would take the music with it.
+ */
 .player-screen {
-  aspect-ratio: 16 / 9;
   height: 200px;
-  width: auto;
-  min-width: 0;
+  width: 200px;
+  flex: none;
   border-radius: 2px;
   overflow: hidden;
   box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.8), 0 2px 8px rgb(0 0 0 / 0.5);
@@ -1331,12 +1336,10 @@ body {
     align-items: center;
   }
 
+  /* Same 200x200 floor on a phone; it simply centres in the bay. */
   .player-screen {
-    /* Width-driven here, with the 200px floor still winning on narrow screens
-       so the player never drops below what YouTube's terms allow. */
-    height: auto;
-    width: min(100%, 30rem);
-    min-height: 200px;
+    height: 200px;
+    width: 200px;
   }
 
   .deck-info {
