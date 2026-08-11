@@ -105,11 +105,33 @@ for (const vp of VIEWPORTS) {
         return `${name} [${Math.round(b.top)}..${Math.round(b.bottom)}]`;
       });
 
+    /*
+     * The window is the whole point of the scene, so no panel may sit on the
+     * glass. This is a real regression that shipped once: the deck and the
+     * control bar together needed more wall than the carriage leaves below the
+     * window, so the deck rode up over it.
+     *
+     * The indicator is exempt — it is mounted on the frame deliberately.
+     */
+    const glass = document.querySelector(".window-box")?.getBoundingClientRect();
+    const covering = [];
+    if (glass) {
+      for (const sel of [".console-mount", ".top-mount", ".rail-mount", ".carriage-props"]) {
+        const el = document.querySelector(sel);
+        if (!el) continue;
+        const b = el.getBoundingClientRect();
+        const ox = Math.min(b.right, glass.right) - Math.max(b.left, glass.left);
+        const oy = Math.min(b.bottom, glass.bottom) - Math.max(b.top, glass.top);
+        if (ox > 2 && oy > 2) covering.push(`${sel} by ${Math.round(ox)}x${Math.round(oy)}px`);
+      }
+    }
+
     return {
       overflowX: doc.scrollWidth - doc.clientWidth,
       overflowY: doc.scrollHeight - doc.clientHeight,
       player: r ? { w: Math.round(r.width), h: Math.round(r.height) } : null,
       clipped: [...new Set(clipped)],
+      covering,
     };
   });
 
@@ -125,6 +147,7 @@ for (const vp of VIEWPORTS) {
   console.log(
     `${vp.name}  overflow ${audit.overflowX}/${audit.overflowY}  ${playerNote}` +
       (audit.clipped.length ? `  CLIPPED: ${audit.clipped.join(", ")}` : "") +
+      (audit.covering.length ? `  ON THE GLASS: ${audit.covering.join(", ")}` : "") +
       (unexpected.length ? `  BROKEN: ${unexpected.join(", ")}` : "") +
       (pendingAudio.length ? `  (awaiting audio: ${pendingAudio.length} files)` : "") +
       (errors.length ? `  errors: ${errors.slice(0, 2).join(" | ")}` : "")
@@ -156,7 +179,8 @@ for (const vp of VIEWPORTS) {
       .count()
       .then((n) => n > 0);
     console.log(`  focus mode: player visible = ${playerStillThere}, chrome hidden = ${railGone}`);
-    await focusChip.click();
+    // The chip itself is inert while focused; "Show controls" is the way back.
+    await page.getByRole("button", { name: /show controls/i }).click();
     await page.waitForTimeout(700);
 
     /*

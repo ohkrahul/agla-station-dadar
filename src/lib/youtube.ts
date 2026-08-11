@@ -78,18 +78,34 @@ export function loadIframeApi(): Promise<YTNamespace> {
 }
 
 /**
- * §6 requires the player to stay visible and uncovered, and these are the
- * documented parameters that keep it that way. `controls: 1` is the simplest
- * safe choice for v1 — our own buttons sit outside the iframe and drive it
- * through the API rather than replacing YouTube's own controls.
+ * §6 requires the player to stay visible and uncovered; these are the documented
+ * parameters that shape it without breaking that.
+ *
+ * `controls: 0` is allowed precisely because the deck supplies its own
+ * play/pause, skip and volume through the API — Required Minimum Functionality
+ * asks that disabling YouTube's controls be paired with equivalent ones, not
+ * that the player be left bare. It also removes the settings gear, captions
+ * button and progress bar, which is what makes the player read as a cassette
+ * window rather than an embedded video.
+ *
+ * What CANNOT be removed: YouTube's own branding and the link back to the watch
+ * page. Those are required, and covering them would breach the same terms that
+ * keep the embed legitimate — so they stay.
  */
 export function playerVars(): Record<string, string | number> {
   return {
     enablejsapi: 1,
     playsinline: 1,
-    controls: 1,
+    /** Our own transport drives the player, so YouTube's bar is redundant. */
+    controls: 0,
+    /** Related videos limited to the same channel; cannot be disabled outright. */
     rel: 0,
-    modestbranding: 1,
+    /** No annotation overlays. */
+    iv_load_policy: 3,
+    /** Fullscreen would take over the carriage. */
+    fs: 0,
+    /** Keyboard belongs to the scene, not to a hidden iframe. */
+    disablekb: 1,
     origin: window.location.origin,
   };
 }

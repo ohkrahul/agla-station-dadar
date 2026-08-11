@@ -153,33 +153,51 @@ export function TrainExperience() {
         </div>
 
         <CarriageProps />
+      </div>
 
-        <div className="mode-mount">
+      {/*
+        One band, not two.
+        The carriage only leaves about 260px of wall below the glass, and a
+        separate deck and control bar needed roughly 300px between them — so the
+        deck rode up over the window. Everything below the glass now shares a
+        single row whose height is set by the player's 200px floor (§6).
+
+        The deck itself survives focus mode; the controls beside it fade.
+      */}
+      <div className="console-mount">
+        <PlayerDeck radio={radio} />
+
+        <div className={`chrome-layer console-controls ${focus ? "is-hidden" : ""}`} inert={focus}>
+          <BottomBar
+            moodId={moodId}
+            onMood={setMoodId}
+            bucket={bucket}
+            onCycleBucket={() => setBucketIndex((i) => (i + 1) % BUCKETS.length)}
+            announcements={announcements}
+            onAnnouncements={setAnnouncements}
+            focus={focus}
+            onFocus={setFocus}
+            fanSpeed={fanSpeed}
+            onFan={setFanSpeed}
+            onShare={share}
+            shareNote={shareNote}
+          />
+        </div>
+
+        {/* Focus mode's way back out has to stay reachable. */}
+        {focus && (
+          <button
+            type="button"
+            onClick={() => setFocus(false)}
+            className="share-key self-end"
+          >
+            Show controls
+          </button>
+        )}
+
+        <div className={`chrome-layer ${focus ? "is-hidden" : ""}`} inert={focus}>
           <JourneyMode seat={seat} onSeat={setSeat} />
         </div>
-      </div>
-
-      {/* The deck stays through focus mode — it is the thing you are here for,
-          and the way back out of focus is on the bar beneath it. */}
-      <div className="deck-mount">
-        <PlayerDeck radio={radio} />
-      </div>
-
-      <div className="bar-mount">
-        <BottomBar
-          moodId={moodId}
-          onMood={setMoodId}
-          bucket={bucket}
-          onCycleBucket={() => setBucketIndex((i) => (i + 1) % BUCKETS.length)}
-          announcements={announcements}
-          onAnnouncements={setAnnouncements}
-          focus={focus}
-          onFocus={setFocus}
-          fanSpeed={fanSpeed}
-          onFan={setFanSpeed}
-          onShare={share}
-          shareNote={shareNote}
-        />
       </div>
 
       {!boarded && <BoardTrain onBoard={() => setBoarded(true)} />}

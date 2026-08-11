@@ -22,7 +22,9 @@ export function PlayerDeck({ radio }: { radio: Radio }) {
 
   return (
     <section className="player-deck panel" aria-label="Radio">
-      {/* Left bay: the player itself. */}
+      {/* Left bay: the player, and nothing else. A caption row under it made the
+          console taller than the wall below the glass, so the deck covered the
+          window — that metadata now sits in the info column where it belongs. */}
       <div className="deck-bay">
         <div className="player-screen relative bg-black">
           <div ref={radio.mountRef} className="h-full w-full" />
@@ -32,17 +34,16 @@ export function PlayerDeck({ radio }: { radio: Radio }) {
             </p>
           )}
         </div>
-        <div className="mt-1 flex items-center justify-between gap-3">
-          <p className="chip-label truncate">Auto reverse · FM/AM</p>
-          <p className="t-ticket text-[0.6rem] text-cream-lit/45">
-            {String(index + 1).padStart(2, "0")}/{String(total).padStart(2, "0")}
-          </p>
-        </div>
       </div>
 
       {/* Middle: what is on. */}
       <div className="deck-info">
-        <p className="chip-label">Now playing</p>
+        <div className="flex items-baseline justify-between gap-3">
+          <p className="chip-label">Now playing</p>
+          <p className="t-ticket text-[0.6rem] text-cream-lit/45">
+            {String(index + 1).padStart(2, "0")}/{String(total).padStart(2, "0")}
+          </p>
+        </div>
         <p className="mt-0.5 truncate text-[1.15rem] leading-tight text-cream-lit">
           {current?.title ?? "—"}
         </p>
@@ -52,7 +53,7 @@ export function PlayerDeck({ radio }: { radio: Radio }) {
 
         {current && (
           <p className="chip-label mt-1 text-gold/70">
-            {bucketLabels[current.buckets[0]]}
+            {bucketLabels[current.buckets[0]]} · Auto reverse · FM/AM
           </p>
         )}
 

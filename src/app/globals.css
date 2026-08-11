@@ -58,9 +58,11 @@
    * below 200px without breaking §6.
    *
    * Portrait hides the route rail, wall props and journey mode, and the compact
-   * indicator costs about 60px, which is what buys the window this much.
+   * indicator costs about 60px, which is what buys the window this much. The
+   * plate is also offset down to clear the top bar, so this cannot go much
+   * higher without the indicator meeting the console.
    */
-  --portrait-zoom: 1.62;
+  --portrait-zoom: 1.5;
 
   /* How much of the photograph's bottom edge the CSS wall fades over. */
   --wall-fade: 72px;
@@ -123,12 +125,17 @@ body {
 /* Portrait sits closer to the glass instead of fitting the whole carriage. */
 @media (orientation: portrait) {
   :root {
-    /* Where the photograph stops and the CSS carriage wall takes over. */
-    --plate-bottom: calc(100vw * var(--portrait-zoom) * 1536 / 2752);
+    /* Where the photograph stops and the CSS carriage wall takes over. Includes
+       the plate's top offset, so anything anchored below it follows. */
+    --plate-bottom: calc(3.5rem + 100vw * var(--portrait-zoom) * 1536 / 2752);
   }
 
   .plate {
     width: calc(100vw * var(--portrait-zoom));
+    /* Pushed down to clear the top bar. The glass starts only ~11% into the
+       plate, which on a phone is about 40px — less than the bar is tall, so at
+       top: 0 the bar sat on the window. */
+    top: 3.5rem;
   }
 }
 
@@ -273,9 +280,9 @@ body {
 .rail-mount {
   position: absolute;
   left: 0.9rem;
-  /* Below the top bar, and never taller than the space above the deck. */
+  /* Below the top bar, and never taller than the space above the console. */
   top: 7.5rem;
-  max-height: calc(100dvh - var(--deck-h) - 12.2rem);
+  max-height: calc(100dvh - var(--deck-h) - 9.5rem);
   width: min(13.5rem, 21vw);
   display: flex;
 }
@@ -296,34 +303,63 @@ body {
   width: min(26rem, 44vw);
 }
 
-/* Wide because the player cannot be smaller than 356x200 and still meet §6, so
-   the metadata column has to be found alongside it rather than under it. */
-.deck-mount {
+/*
+ * The console: everything that lives below the glass, in one band.
+ *
+ * Its height is dictated by the player's 200px minimum, and that is the whole
+ * reason it is one band rather than two — see the note in TrainExperience.
+ */
+.console-mount {
   position: absolute;
-  left: 0.9rem;
-  bottom: 4rem;
-  width: min(45rem, 64vw);
-}
-
-.mode-mount {
-  position: absolute;
-  right: 0.9rem;
-  bottom: 4rem;
-  width: min(11rem, 18vw);
-}
-
-.bar-mount {
-  position: absolute;
-  inset-inline: 0;
-  bottom: 0;
-  padding: 0 0.9rem 0.7rem;
+  inset-inline: 0.9rem;
+  bottom: 0.8rem;
+  display: flex;
+  align-items: stretch;
+  gap: 0.6rem;
   isolation: isolate;
 }
 
+/* Short landscape windows leave barely enough wall below the glass, so the band
+   sits closer to the edge rather than climbing onto the window. */
+@media (orientation: landscape) and (max-height: 780px) {
+  .console-mount {
+    bottom: 0.3rem;
+    inset-inline: 0.5rem;
+  }
+
+  .player-deck {
+    padding: 0.45rem;
+  }
+}
+
+.console-mount::before {
+  content: "";
+  position: absolute;
+  inset-inline: -0.9rem;
+  bottom: -0.8rem;
+  height: 20rem;
+  pointer-events: none;
+  z-index: -1;
+  background: linear-gradient(0deg, rgb(10 9 8 / 0.82), rgb(10 9 8 / 0) 100%);
+}
+
+.console-controls {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Two rows of chips rather than one long strip, so the band stays as short as
+   the player requires instead of as wide as the controls want. */
 .bottom-bar {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-content: center;
+  gap: 0.45rem;
+  height: 100%;
+}
+
+.bottom-bar .share-key {
+  justify-content: center;
 }
 
 /* --------------------------------------------------------------------------
@@ -421,7 +457,13 @@ body {
    -------------------------------------------------------------------------- */
 
 .journey-mode {
-  padding: 0.6rem 0.65rem 0.7rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.4rem;
+  height: 100%;
+  width: min(11rem, 16vw);
+  padding: 0.6rem 0.65rem;
 }
 
 .mode-key {
@@ -1168,7 +1210,7 @@ body {
 @media (orientation: portrait) {
   .rail-mount,
   .carriage-props,
-  .mode-mount {
+  .journey-mode {
     display: none;
   }
 
@@ -1221,11 +1263,13 @@ body {
     bottom: auto;
   }
 
-  .deck-mount {
-    left: 0.6rem;
-    right: 0.6rem;
-    width: auto;
-    bottom: 3.4rem;
+  /* A phone cannot hold the band in one row, so the console becomes a column:
+     deck, then the controls beneath it. */
+  .console-mount {
+    inset-inline: 0.6rem;
+    bottom: 0.5rem;
+    flex-direction: column;
+    gap: 0.5rem;
   }
 
   .player-deck {
@@ -1258,24 +1302,12 @@ body {
     padding-left: 0;
   }
 
-  .bar-mount {
-    padding: 0 0.6rem 0.5rem;
-  }
-
-  /* Too many chips for a phone's width, so the row scrolls instead of wrapping
-     into a stack that would push the deck off screen. */
+  /* Two columns of chips: three rows is still shorter than a scrolling strip
+     that hides half the controls off the right edge. */
   .bottom-bar {
-    overflow-x: auto;
-    scrollbar-width: none;
-    padding-bottom: 0.15rem;
-  }
-
-  .bottom-bar::-webkit-scrollbar {
-    display: none;
-  }
-
-  .bottom-bar > * {
-    flex: none;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    height: auto;
+    gap: 0.4rem;
   }
 
   .share-key {
