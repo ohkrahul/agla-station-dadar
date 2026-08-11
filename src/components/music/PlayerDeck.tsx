@@ -7,13 +7,16 @@ import { Knob } from "./Knob";
 type Radio = ReturnType<typeof useRadio>;
 
 /**
- * The deck, mounted into the carriage wall below the window.
+ * The deck: cover art, what is playing, transport, volume.
  *
- * §6 is a hard constraint, not a style choice: the iframe stays visible,
- * uncropped, never below 200x200, and NOTHING is drawn over it. So it takes the
- * place a cassette window would occupy on a real deck, and every bit of physical
- * character lives in the frame, the bolts and the plate AROUND it. Do not add a
- * texture, gradient, scanline or clickable overlay inside `.player-screen`.
+ * The YouTube player itself is NOT here — it is mounted hidden by
+ * <HiddenPlayer/> and this shows the video's thumbnail in its place. That is a
+ * deliberate choice by the project owner, and it is worth being clear about the
+ * trade in code as well as in conversation: YouTube's Required Minimum
+ * Functionality expects an embedded player to stay visible, so a hidden one can
+ * have embedding revoked for the domain. If playback ever starts failing across
+ * every track at once, this is the first thing to suspect — make the mount
+ * visible again and the deck falls back to a compliant 200x200 player.
  */
 export function PlayerDeck({ radio }: { radio: Radio }) {
   const { current, status, note, index, total } = radio;
@@ -22,21 +25,30 @@ export function PlayerDeck({ radio }: { radio: Radio }) {
 
   return (
     <section className="player-deck panel" aria-label="Radio">
-      {/* Left bay: the player, and nothing else. A caption row under it made the
-          console taller than the wall below the glass, so the deck covered the
-          window — that metadata now sits in the info column where it belongs. */}
-      <div className="deck-bay">
-        <div className="player-screen relative bg-black">
-          <div ref={radio.mountRef} className="h-full w-full" />
-          {status === "off" && (
-            <p className="t-label absolute inset-0 grid place-items-center text-steel-lit/35">
-              Unit off
-            </p>
-          )}
-        </div>
+      <div className="deck-art">
+        {current ? (
+          <img
+            src={`https://i.ytimg.com/vi/${current.youtubeId}/mqdefault.jpg`}
+            alt={`${current.title} cover art`}
+            width={320}
+            height={180}
+            /* Falls back through YouTube's other sizes: mqdefault is missing for
+               a few older uploads. */
+            onError={(e) => {
+              const img = e.currentTarget;
+              if (!img.dataset.retried) {
+                img.dataset.retried = "1";
+                img.src = `https://i.ytimg.com/vi/${current.youtubeId}/hqdefault.jpg`;
+              }
+            }}
+          />
+        ) : (
+          <span className="t-label grid h-full w-full place-items-center text-steel-lit/35">
+            Off
+          </span>
+        )}
       </div>
 
-      {/* Middle: what is on. */}
       <div className="deck-info">
         <div className="flex items-baseline justify-between gap-3">
           <p className="chip-label">Now playing</p>
@@ -44,29 +56,28 @@ export function PlayerDeck({ radio }: { radio: Radio }) {
             {String(index + 1).padStart(2, "0")}/{String(total).padStart(2, "0")}
           </p>
         </div>
-        <p className="mt-0.5 truncate text-[1.15rem] leading-tight text-cream-lit">
+
+        <p className="truncate text-[1.05rem] leading-tight text-cream-lit">
           {current?.title ?? "—"}
         </p>
-        {/* Wraps rather than truncates: the column has spare height, and a
-            cut-off artist name is worse than a second line. */}
-        <p className="line-clamp-2 text-[0.8rem] leading-snug text-cream-lit/60">
+        <p className="truncate text-[0.78rem] leading-snug text-cream-lit/60">
           {current ? `${current.artist} • ${current.year}` : ""}
         </p>
 
-        {current && (
-          <p className="chip-label mt-1 truncate text-gold/70">
-            {bucketLabels[current.buckets[0]]}
-          </p>
-        )}
-
-        {/* Errors replace the metadata line, because both answer "what is on?". */}
-        {note && (
-          <p className="mt-1 text-[0.72rem] leading-snug text-gold" role="status" aria-live="polite">
+        {/* Errors replace the shelf label, because both answer "what is on?". */}
+        {note ? (
+          <p className="mt-0.5 truncate text-[0.7rem] text-gold" role="status" aria-live="polite">
             {note}
           </p>
+        ) : (
+          current && (
+            <p className="chip-label mt-0.5 truncate text-gold/70">
+              {bucketLabels[current.buckets[0]]}
+            </p>
+          )
         )}
 
-        <div className="mt-auto flex items-center gap-2 pt-2">
+        <div className="mt-1.5 flex items-center gap-2">
           <DeckKey label="Previous song" onClick={radio.previous} disabled={disabled}>
             ⏮
           </DeckKey>
@@ -85,7 +96,6 @@ export function PlayerDeck({ radio }: { radio: Radio }) {
         </div>
       </div>
 
-      {/* Right: the volume knob, the one control a deck like this really has. */}
       <div className="deck-knob">
         <p className="chip-label">Volume</p>
         <Knob
@@ -94,16 +104,24 @@ export function PlayerDeck({ radio }: { radio: Radio }) {
           disabled={disabled}
           label="Music volume"
         />
-        <div className="flex w-full items-center justify-between px-1">
-          <span aria-hidden className="text-cream-lit/40">
-            −
-          </span>
-          <span aria-hidden className="text-cream-lit/40">
-            +
-          </span>
-        </div>
       </div>
     </section>
+  );
+}
+
+/**
+ * The actual player, kept out of sight.
+ *
+ * `opacity: 0` rather than `display: none`: a display-none iframe is not laid
+ * out, and browsers will refuse to start or will suspend playback in it. It also
+ * stays inside the viewport for the same reason — an element parked far
+ * off-screen gets deprioritised.
+ */
+export function HiddenPlayer({ radio }: { radio: Radio }) {
+  return (
+    <div className="player-hidden" aria-hidden>
+      <div ref={radio.mountRef} className="h-full w-full" />
+    </div>
   );
 }
 

@@ -72,6 +72,22 @@ for (const vp of VIEWPORTS) {
     const doc = document.documentElement;
     const frame = document.querySelector("iframe");
     const r = frame?.getBoundingClientRect();
+
+    /*
+     * Whether the player is actually visible, walking up for a transparent or
+     * hidden ancestor. Size alone would report "200x200 OK" for a player nobody
+     * can see, which is worse than reporting nothing.
+     */
+    let seen = !!frame;
+    if (frame) {
+      for (let e = frame; e; e = e.parentElement) {
+        const s = getComputedStyle(e);
+        if (s.display === "none" || s.visibility === "hidden" || parseFloat(s.opacity) === 0) {
+          seen = false;
+          break;
+        }
+      }
+    }
     /*
      * A control sitting outside the viewport is only a bug if nothing can bring
      * it back. Inside a deliberately scrollable row it is reachable, so the
@@ -129,23 +145,39 @@ for (const vp of VIEWPORTS) {
     return {
       overflowX: doc.scrollWidth - doc.clientWidth,
       overflowY: doc.scrollHeight - doc.clientHeight,
-      player: r ? { w: Math.round(r.width), h: Math.round(r.height) } : null,
+      player: r ? { w: Math.round(r.width), h: Math.round(r.height), seen } : null,
       clipped: [...new Set(clipped)],
       covering,
     };
   });
 
-  const playerNote = audit.player
-    ? `player ${audit.player.w}x${audit.player.h} ${
-        audit.player.w >= 200 && audit.player.h >= 200 ? "OK" : "TOO SMALL (§6)"
-      }`
-    : "player absent";
+  /*
+   * Does it actually play? This is the whole risk of a hidden player: browsers
+   * deprioritise invisible media, and YouTube can revoke embedding for a domain
+   * that hides it. The transport button reads "Pause" only while playing, so it
+   * is a reliable proxy for real playback in a headless run.
+   */
+  const playing = await page
+    .getByRole("button", { name: /^pause$/i })
+    .count()
+    .then((n) => n > 0);
+
+  const playerNote = !audit.player
+    ? "player absent"
+    : !audit.player.seen
+      ? // Stated plainly rather than passed: the owner chose this, but the tool
+        // must not certify a compliance it no longer has.
+        `player ${audit.player.w}x${audit.player.h} HIDDEN (breaks §6 by design)`
+      : `player ${audit.player.w}x${audit.player.h} ${
+          audit.player.w >= 200 && audit.player.h >= 200 ? "visible OK" : "TOO SMALL (§6)"
+        }`;
 
   const unexpected = [...new Set(missing)].filter((m) => !EXPECTED_MISSING.test(m));
   const pendingAudio = [...new Set(missing)].filter((m) => EXPECTED_MISSING.test(m));
 
   console.log(
     `${vp.name}  overflow ${audit.overflowX}/${audit.overflowY}  ${playerNote}` +
+      `  ${playing ? "playing" : "NOT PLAYING"}` +
       (audit.clipped.length ? `  CLIPPED: ${audit.clipped.join(", ")}` : "") +
       (audit.covering.length ? `  ON THE GLASS: ${audit.covering.join(", ")}` : "") +
       (unexpected.length ? `  BROKEN: ${unexpected.join(", ")}` : "") +

@@ -16,7 +16,7 @@ import { TopBar } from "./TopBar";
 import { CarriageProps } from "./CarriageProps";
 import { ControlRail } from "./SidePanels";
 import { useJourney, type Seat } from "./useJourney";
-import { PlayerDeck } from "@/components/music/PlayerDeck";
+import { PlayerDeck, HiddenPlayer } from "@/components/music/PlayerDeck";
 import { useRadio } from "@/components/music/useRadio";
 import { useAmbience } from "@/components/ambience/useAmbience";
 
@@ -198,6 +198,9 @@ export function TrainExperience() {
           </button>
         )}
       </div>
+
+      {/* Audio source, mounted out of sight. Must stay in the layout to play. */}
+      <HiddenPlayer radio={radio} />
 
       {!boarded && <BoardTrain onBoard={() => setBoarded(true)} />}
     </main>
