@@ -1,17 +1,16 @@
 /**
- * The playlist (playbook §6.1). No database, no YouTube Data API — curated IDs
- * played through one visible IFrame player.
+ * The playlist (playbook §6.1).
  *
- * Deliberately small: six tracks, every one of them verified playable. An entry
- * that cannot play is worse than no entry, so there are no placeholders here.
+ * Every ID here has passed `npm run check:songs`, which confirms via oEmbed that
+ * the video exists, permits embedding, and carries the title we expect — the last
+ * part catches a plausible-looking ID that points at some other song. What it
+ * cannot check is region restriction, which varies by viewer.
  *
- * `buckets` are PLAYLIST groupings and are deliberately not the same axis as the
- * visual MoodId in data/moods.ts. "monsoon" appears in both and means different
- * things: here a rainy-reflective song, there what is out the window.
+ * There are no placeholder rows. An entry that cannot play is worse than no
+ * entry, so a song without a verified ID does not go in.
  *
- * Verify with `npm run check:songs` — it confirms via oEmbed that each video
- * exists, permits embedding, and carries the title we expect. It cannot check
- * region restriction, which varies per viewer.
+ * Songs carry more than one bucket where they belong to more than one, which is
+ * what keeps the filters from being one or two tracks each.
  */
 export type SongBucket = "90s" | "2000s" | "monsoon" | "last-local";
 
@@ -24,12 +23,12 @@ export type Song = {
 };
 
 export const songs: Song[] = [
+  // ── 90s Local ───────────────────────────────────────────────────────────
   {
     title: "Pehla Nasha",
     artist: "Udit Narayan, Sadhana Sargam",
     year: 1992,
-    // Saregama Music — the rights holder, not a reupload (§6).
-    youtubeId: "ZYotlBxpM3Q",
+    youtubeId: "ZYotlBxpM3Q", // Saregama Music
     buckets: ["90s", "monsoon"],
   },
   {
@@ -40,6 +39,45 @@ export const songs: Song[] = [
     buckets: ["90s"],
   },
   {
+    title: "Yaaron",
+    artist: "KK",
+    year: 1999,
+    youtubeId: "LCfvYo3ILG0",
+    buckets: ["90s", "last-local"],
+  },
+
+  // ── 2000s Kid ───────────────────────────────────────────────────────────
+  {
+    title: "Tum Se Hi",
+    artist: "Mohit Chauhan",
+    year: 2007,
+    youtubeId: "mt9xg0mmt28", // T-Series
+    buckets: ["2000s", "monsoon", "last-local"],
+  },
+  {
+    title: "Iktara",
+    artist: "Kavita Seth, Amit Trivedi",
+    year: 2009,
+    youtubeId: "fSS_R91Nimw", // SonyMusicIndiaVEVO
+    buckets: ["2000s", "last-local"],
+  },
+  {
+    title: "Chand Sifarish",
+    artist: "Shaan, Kailash Kher",
+    year: 2006,
+    youtubeId: "zWEOx7TSM6I", // YRF
+    buckets: ["2000s"],
+  },
+  {
+    title: "Barso Re",
+    artist: "Shreya Ghoshal",
+    year: 2007,
+    youtubeId: "asw-wTDzGUQ",
+    buckets: ["2000s", "monsoon"],
+  },
+
+  // ── Mumbai Monsoon ──────────────────────────────────────────────────────
+  {
     // Filmed walking through actual monsoon Mumbai. The definitive one.
     title: "Rimjhim Gire Sawan",
     artist: "Kishore Kumar",
@@ -48,24 +86,34 @@ export const songs: Song[] = [
     buckets: ["monsoon"],
   },
   {
-    title: "Tum Se Hi",
-    artist: "Mohit Chauhan",
-    year: 2007,
-    youtubeId: "mt9xg0mmt28", // T-Series
-    buckets: ["2000s", "monsoon"],
+    // The female version from the same film, and just as well known.
+    title: "Rimjhim Gire Sawan",
+    artist: "Lata Mangeshkar",
+    year: 1979,
+    youtubeId: "6C7R_CUJgHQ",
+    buckets: ["monsoon"],
   },
-  {
-    title: "Iktara",
-    artist: "Kavita Seth, Amit Trivedi",
-    year: 2009,
-    youtubeId: "fSS_R91Nimw", // SonyMusicIndiaVEVO
-    buckets: ["2000s"],
-  },
+
+  // ── Last Local ──────────────────────────────────────────────────────────
   {
     title: "Kabira",
     artist: "Rekha Bhardwaj, Tochi Raina",
     year: 2013,
     youtubeId: "jHNNMj5bNQw", // T-Series
+    buckets: ["last-local"],
+  },
+  {
+    title: "Ilahi",
+    artist: "Arijit Singh",
+    year: 2013,
+    youtubeId: "fdubeMFwuGs",
+    buckets: ["last-local", "2000s"],
+  },
+  {
+    title: "Tum Ho",
+    artist: "Mohit Chauhan",
+    year: 2011,
+    youtubeId: "gkCKTuR-ECI", // T-Series
     buckets: ["last-local"],
   },
 ];

@@ -135,17 +135,16 @@ export function TrainExperience() {
           />
         </div>
 
+        {/* Route panel and wall props share the left column, so the props sit
+            wherever the panel happens to end rather than at a guessed offset. */}
         <div className="rail-mount">
           <RouteRail
             index={journey.index}
             atStation={journey.atStation}
             onJumpTo={journey.jumpTo}
           />
+          <CarriageProps />
         </div>
-
-        {/* Under the route rail, on the left: the right-hand wall now carries the
-            control rail, and the two together would not fit there. */}
-        <CarriageProps />
 
         {/* The mirror of the route rail — controls read top to bottom under the
             fan, which also leaves the band below the glass to the deck alone. */}

@@ -320,13 +320,16 @@ body {
 }
 
 /* Sized to content now that it names one station rather than ten, so it needs
-   no height cap and cannot scroll. */
+   no height cap and cannot scroll. Holds the wall props beneath it. */
 .rail-mount {
   position: absolute;
   left: 0.9rem;
   top: 7.5rem;
   width: min(13.5rem, 21vw);
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.8rem;
 }
 
 .route-rail {
@@ -579,19 +582,15 @@ body {
    Carriage props, on the wall right of the glass
    -------------------------------------------------------------------------- */
 
-/* Moved to the left wall, beneath the route rail: the right wall now carries the
-   control rail, and both would not fit there. Laid out two-up so four props cost
-   half the height a column would. */
+/* In flow under the route panel rather than at a guessed offset. They were
+   pinned at 32rem and hidden below 820px tall — sizing left over from the old
+   ten-stop list, which is why they went missing on most laptops. */
 .carriage-props {
-  position: absolute;
-  left: 0.9rem;
-  /* Below the route rail, above the console band. */
-  top: 32rem;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 0.6rem;
-  width: min(13.5rem, 21vw);
+  width: 100%;
   pointer-events: none;
 }
 
@@ -1329,8 +1328,9 @@ body {
    610px window and rode onto the glass. Ordered widest condition first.
    ========================================================================== */
 
-/* Hidden rather than clipped when the wall runs short. */
-@media (orientation: landscape) and (max-height: 820px) {
+/* Only dropped when the wall genuinely cannot hold them. The old threshold was
+   820px, which hid them on nearly every laptop. */
+@media (orientation: landscape) and (max-height: 560px) {
   .carriage-props {
     display: none;
   }

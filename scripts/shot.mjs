@@ -168,7 +168,28 @@ for (const vp of VIEWPORTS) {
       })
       .map((el) => `${el.className.toString().split(" ")[0] || el.tagName} +${el.scrollHeight - el.clientHeight}px`);
 
+    /*
+     * Elements that should be on screen but are not. The wall props were pinned
+     * at a fixed offset and hidden below 820px tall, so they silently vanished on
+     * most laptops — nothing caught it because nothing was looking.
+     */
+    const expected = { ".prop-warning": "door sign", ".prop-note": "wall note" };
+    const missing = [];
+    for (const [sel, name] of Object.entries(expected)) {
+      const el = document.querySelector(sel);
+      if (!el) {
+        missing.push(`${name} (absent)`);
+        continue;
+      }
+      const r = el.getBoundingClientRect();
+      const s = getComputedStyle(el);
+      const offscreen = r.bottom > window.innerHeight + 1 || r.right > window.innerWidth + 1;
+      if (s.display === "none" || r.height === 0) missing.push(`${name} (hidden)`);
+      else if (offscreen) missing.push(`${name} (off screen)`);
+    }
+
     return {
+      missingProps: missing,
       scrollers: [...new Set(scrollers)],
       overflowX: doc.scrollWidth - doc.clientWidth,
       overflowY: doc.scrollHeight - doc.clientHeight,
@@ -211,6 +232,10 @@ for (const vp of VIEWPORTS) {
       (audit.clipped.length ? `  CLIPPED: ${audit.clipped.join(", ")}` : "") +
       (audit.covering.length ? `  ON THE GLASS: ${audit.covering.join(", ")}` : "") +
       (audit.scrollers.length ? `  SCROLLING: ${audit.scrollers.join(", ")}` : "") +
+      // Portrait drops the props on purpose — no wall to put them on.
+      (audit.missingProps.length && vp.width > vp.height
+        ? `  MISSING: ${audit.missingProps.join(", ")}`
+        : "") +
       (unexpected.length ? `  BROKEN: ${unexpected.join(", ")}` : "") +
       (pendingAudio.length ? `  (awaiting audio: ${pendingAudio.length} files)` : "") +
       (errors.length ? `  errors: ${errors.slice(0, 2).join(" | ")}` : "")
