@@ -30,36 +30,58 @@ export function EnvironmentMedia({
   /**
    * Braking and pulling away, done on the video's own clock.
    *
-   * playbackRate is ramped rather than stepped, because a plate that stops dead
-   * reads as a broken loop instead of a train arriving. Rate 0 is invalid in
-   * some browsers, so the floor is a pause once the ramp has run down.
+   * Two things here are deliberate and were both learned the hard way, because
+   * the first version made arrivals look like the video was lagging:
+   *
+   * 1. The rate never goes below MIN_RATE. Slowing a 24fps clip to 0.06 leaves
+   *    about 1.4 unique frames a second — measured at 4fps across an arrival —
+   *    which reads as a stutter, not as a train stopping. At 0.55 it is still
+   *    13fps, slow but smooth. The plate then pauses outright, which is correct:
+   *    a stopped train is a still image.
+   *
+   * 2. The rate is quantised and only assigned when it actually changes. The
+   *    original set playbackRate on every animation frame — 131 assignments per
+   *    arrival — and each one makes the media pipeline resync. Stepping in 0.05s
+   *    cuts that to about ten.
    */
   useEffect(() => {
     const el = videoRef.current;
     if (!el) return;
 
-    let raf = 0;
-    const from = el.paused ? 0 : el.playbackRate;
-    const to = speed;
-    const start = performance.now();
-    const ms = 2600;
+    const MIN_RATE = 0.55;
+    const STEP = 0.05;
+    const ms = 1800;
 
-    if (to > 0 && el.paused) void el.play().catch(() => {});
+    let raf = 0;
+    const from = el.paused ? MIN_RATE : el.playbackRate;
+    const to = speed > 0 ? 1 : MIN_RATE;
+    const start = performance.now();
+    let assigned = -1;
+
+    if (speed > 0 && el.paused) {
+      el.playbackRate = MIN_RATE;
+      assigned = MIN_RATE;
+      void el.play().catch(() => {});
+    }
 
     const step = (now: number) => {
       const t = Math.min(1, (now - start) / ms);
-      // Ease out, so most of the slowing happens early like real braking.
+      // Ease out, so most of the change happens early like real braking.
       const eased = 1 - (1 - t) ** 3;
-      const rate = from + (to - from) * eased;
+      const raw = from + (to - from) * eased;
+      const rate = Math.round(raw / STEP) * STEP;
 
-      if (rate <= 0.06) {
-        el.pause();
-      } else {
-        if (el.paused) void el.play().catch(() => {});
-        el.playbackRate = Math.min(1, rate);
+      if (rate !== assigned) {
+        el.playbackRate = Math.min(1, Math.max(MIN_RATE, rate));
+        assigned = rate;
       }
 
-      if (t < 1) raf = requestAnimationFrame(step);
+      if (t < 1) {
+        raf = requestAnimationFrame(step);
+      } else if (speed === 0) {
+        // Hold the frame rather than creep along it.
+        el.pause();
+      }
     };
 
     raf = requestAnimationFrame(step);

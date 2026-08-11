@@ -183,8 +183,11 @@ for (const vp of VIEWPORTS) {
    */
   const playing = await page
     .getByRole("button", { name: /^pause$/i })
-    .count()
-    .then((n) => n > 0);
+    // Waited for rather than sampled: YouTube's start-up time varies by several
+    // seconds, and a single check at a fixed moment reported false failures.
+    .waitFor({ state: "visible", timeout: 12_000 })
+    .then(() => true)
+    .catch(() => false);
 
   const playerNote = !audit.player
     ? "player absent"
