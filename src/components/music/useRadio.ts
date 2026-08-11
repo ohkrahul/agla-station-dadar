@@ -28,6 +28,9 @@ export function useRadio({
 
   const [index, setIndex] = useState(0);
   const [status, setStatus] = useState<RadioStatus>("off");
+  /** Read inside timers and YouTube callbacks, which close over stale state. */
+  const statusRef = useRef<RadioStatus>("off");
+  statusRef.current = status;
   const [volume, setVolume] = useState(70);
   const [note, setNote] = useState<string | null>(null);
   /** Songs YouTube refused. Kept so skipping cannot loop over them forever. */
@@ -106,6 +109,21 @@ export function useRadio({
             onReady: () => {
               playerRef.current?.setVolume(volume);
               playerRef.current?.playVideo();
+
+              /*
+               * Boarding is a real user gesture, so playback should be allowed —
+               * but browsers differ on how long that permission lasts and some
+               * refuse unmuted playback outright. If nothing is playing shortly
+               * after, say so: a silent paused frame looks broken, and YouTube
+               * shows its title and related-video overlay while paused, which is
+               * exactly the chrome we are trying not to display.
+               */
+              setTimeout(() => {
+                if (statusRef.current !== "playing") {
+                  setStatus("paused");
+                  setNote("Your browser held playback — press play.");
+                }
+              }, 2500);
             },
             onStateChange: (e) => {
               if (e.data === YT_STATE.PLAYING) {

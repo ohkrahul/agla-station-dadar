@@ -14,7 +14,7 @@ import { LedBoard } from "./LedBoard";
 import { RouteRail } from "./RouteRail";
 import { TopBar } from "./TopBar";
 import { CarriageProps } from "./CarriageProps";
-import { JourneyMode, BottomBar } from "./SidePanels";
+import { ControlRail } from "./SidePanels";
 import { useJourney, type Seat } from "./useJourney";
 import { PlayerDeck } from "@/components/music/PlayerDeck";
 import { useRadio } from "@/components/music/useRadio";
@@ -152,23 +152,14 @@ export function TrainExperience() {
           />
         </div>
 
+        {/* Under the route rail, on the left: the right-hand wall now carries the
+            control rail, and the two together would not fit there. */}
         <CarriageProps />
-      </div>
 
-      {/*
-        One band, not two.
-        The carriage only leaves about 260px of wall below the glass, and a
-        separate deck and control bar needed roughly 300px between them — so the
-        deck rode up over the window. Everything below the glass now shares a
-        single row whose height is set by the player's 200px floor (§6).
-
-        The deck itself survives focus mode; the controls beside it fade.
-      */}
-      <div className="console-mount">
-        <PlayerDeck radio={radio} />
-
-        <div className={`chrome-layer console-controls ${focus ? "is-hidden" : ""}`} inert={focus}>
-          <BottomBar
+        {/* The mirror of the route rail — controls read top to bottom under the
+            fan, which also leaves the band below the glass to the deck alone. */}
+        <div className="control-mount">
+          <ControlRail
             moodId={moodId}
             onMood={setMoodId}
             bucket={bucket}
@@ -179,25 +170,33 @@ export function TrainExperience() {
             onFocus={setFocus}
             fanSpeed={fanSpeed}
             onFan={setFanSpeed}
+            seat={seat}
+            onSeat={setSeat}
             onShare={share}
             shareNote={shareNote}
           />
         </div>
+      </div>
 
-        {/* Focus mode's way back out has to stay reachable. */}
+      {/*
+        The band below the glass holds the deck and nothing else. Its height is
+        set by the player's 200px floor (§6), and the carriage only leaves about
+        260px of wall there — which is why the controls moved to the right rail
+        rather than sharing this row.
+      */}
+      <div className="console-mount">
+        <PlayerDeck radio={radio} />
+
+        {/* Focus mode hides the rail, so the way back out lives here. */}
         {focus && (
           <button
             type="button"
             onClick={() => setFocus(false)}
-            className="share-key self-end"
+            className="share-key self-center"
           >
             Show controls
           </button>
         )}
-
-        <div className={`chrome-layer ${focus ? "is-hidden" : ""}`} inert={focus}>
-          <JourneyMode seat={seat} onSeat={setSeat} />
-        </div>
       </div>
 
       {!boarded && <BoardTrain onBoard={() => setBoarded(true)} />}

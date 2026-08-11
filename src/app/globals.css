@@ -311,12 +311,19 @@ body {
  */
 .console-mount {
   position: absolute;
-  inset-inline: 0.9rem;
+  left: 0.9rem;
+  right: 0.9rem;
   bottom: 0.8rem;
   display: flex;
   align-items: stretch;
   gap: 0.6rem;
   isolation: isolate;
+}
+
+/* The deck no longer shares its row, so it can be wide enough that the metadata
+   column stops truncating song titles. */
+.console-mount > .player-deck {
+  width: min(44rem, 62vw);
 }
 
 /* Short landscape windows leave barely enough wall below the glass, so the band
@@ -343,23 +350,53 @@ body {
   background: linear-gradient(0deg, rgb(10 9 8 / 0.82), rgb(10 9 8 / 0) 100%);
 }
 
-.console-controls {
-  flex: 1;
-  min-width: 0;
+/* --------------------------------------------------------------------------
+   Control rail — the right-hand mirror of the route rail, under the fan.
+   -------------------------------------------------------------------------- */
+
+.control-mount {
+  position: absolute;
+  right: 0.9rem;
+  /* Clear of the fan, and stopping above the console band. */
+  top: 9.5rem;
+  bottom: calc(var(--deck-h) + 1.6rem);
+  width: min(13.5rem, 21vw);
+  display: flex;
+  /* Centred rather than stretched: a panel taller than its contents reads as an
+     empty box rather than as a fitting. */
+  align-items: center;
 }
 
-/* Two rows of chips rather than one long strip, so the band stays as short as
-   the player requires instead of as wide as the controls want. */
-.bottom-bar {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  align-content: center;
-  gap: 0.45rem;
-  height: 100%;
+.control-rail {
+  display: flex;
+  width: 100%;
+  max-height: 100%;
+  flex-direction: column;
+  padding: 0.7rem 0.75rem;
+  overflow-y: auto;
 }
 
-.bottom-bar .share-key {
-  justify-content: center;
+.rail-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0.3rem 0.4rem;
+  border-radius: 3px;
+  background: rgb(255 255 255 / 0.03);
+  transition: background 160ms ease;
+}
+
+.rail-chip + .rail-chip {
+  margin-top: 0.3rem;
+}
+
+.rail-chip:hover {
+  background: rgb(255 255 255 / 0.09);
+}
+
+.rail-chip[aria-pressed="true"] .chip-value {
+  color: var(--color-gold);
 }
 
 /* --------------------------------------------------------------------------
@@ -532,16 +569,27 @@ body {
    Carriage props, on the wall right of the glass
    -------------------------------------------------------------------------- */
 
+/* Moved to the left wall, beneath the route rail: the right wall now carries the
+   control rail, and both would not fit there. Laid out two-up so four props cost
+   half the height a column would. */
 .carriage-props {
   position: absolute;
-  right: 1rem;
-  top: 9rem;
+  left: 0.9rem;
+  /* Below the route rail, above the console band. */
+  top: 32rem;
   display: flex;
-  width: min(7rem, 12vw);
   flex-direction: column;
-  align-items: flex-end;
-  gap: 0.7rem;
+  align-items: flex-start;
+  gap: 0.6rem;
+  width: min(13.5rem, 21vw);
   pointer-events: none;
+}
+
+/* Hidden rather than clipped when the wall runs short. */
+@media (orientation: landscape) and (max-height: 820px) {
+  .carriage-props {
+    display: none;
+  }
 }
 
 .prop-plaque,

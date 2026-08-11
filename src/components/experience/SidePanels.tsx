@@ -6,47 +6,13 @@ import type { Seat } from "./useJourney";
 import type { FanSpeed } from "./TrainExperience";
 
 /**
- * Where you are sitting.
+ * The controls, as a rail down the right-hand wall under the fan — the mirror of
+ * the route rail on the left. Reading top to bottom like the route does, rather
+ * than as a strip of chips along the bottom.
  *
- * v3 dropped the door-view video, so this is not a different plate — it changes
- * how the same plate is framed and how hard it moves: a door seat sits nearer
- * the opening, so the view is wider, faster and shakier. Honest about what it
- * is rather than promising footage that does not exist.
+ * Every entry is a real control, not a badge.
  */
-export function JourneyMode({ seat, onSeat }: { seat: Seat; onSeat: (s: Seat) => void }) {
-  const options: { id: Seat; label: string; glyph: string }[] = [
-    { id: "window", label: "Window seat", glyph: "▤" },
-    { id: "door", label: "Door side", glyph: "▥" },
-  ];
-
-  return (
-    <fieldset className="journey-mode panel">
-      <legend className="chip-label px-1">Journey mode</legend>
-      <div className="flex flex-col gap-1.5">
-        {options.map((o) => (
-          <button
-            key={o.id}
-            type="button"
-            role="radio"
-            aria-checked={seat === o.id}
-            onClick={() => onSeat(o.id)}
-            className="mode-key"
-            data-on={seat === o.id}
-          >
-            <span aria-hidden>{o.glyph}</span>
-            {o.label}
-          </button>
-        ))}
-      </div>
-    </fieldset>
-  );
-}
-
-/**
- * The strip along the bottom: the handful of things worth changing mid-journey.
- * Every one of them is a real control, not a badge.
- */
-export function BottomBar({
+export function ControlRail({
   moodId,
   onMood,
   bucket,
@@ -57,6 +23,8 @@ export function BottomBar({
   onFocus,
   fanSpeed,
   onFan,
+  seat,
+  onSeat,
   onShare,
   shareNote,
 }: {
@@ -70,23 +38,28 @@ export function BottomBar({
   onFocus: (v: boolean) => void;
   fanSpeed: FanSpeed;
   onFan: (v: FanSpeed) => void;
+  seat: Seat;
+  onSeat: (s: Seat) => void;
   onShare: () => void;
   shareNote: string | null;
 }) {
   const fanOrder: FanSpeed[] = ["off", "slow", "normal"];
 
   return (
-    <div className="bottom-bar">
-      <BarButton
+    <div className="control-rail panel">
+      <p className="chip-label mb-1.5 flex items-center gap-1.5">
+        <span aria-hidden>▤</span> Carriage
+      </p>
+
+      <RailButton
         label="Playlist"
         value={bucket ? bucketLabels[bucket] : "All tracks"}
         glyph="♫"
         onClick={onCycleBucket}
-        after="›"
       />
 
       {/* The mood switch, as the reference's weather chip: one control, cycling. */}
-      <BarButton
+      <RailButton
         label="Weather"
         value={moods[moodId].label}
         glyph={moods[moodId].glyph}
@@ -96,14 +69,14 @@ export function BottomBar({
         }}
       />
 
-      <BarButton
+      <RailButton
         label="Fan"
         value={fanSpeed}
         glyph="✿"
         onClick={() => onFan(fanOrder[(fanOrder.indexOf(fanSpeed) + 1) % fanOrder.length])}
       />
 
-      <BarButton
+      <RailButton
         label="Announcements"
         value={announcements ? "On" : "Off"}
         glyph="🔉"
@@ -111,7 +84,7 @@ export function BottomBar({
         pressed={announcements}
       />
 
-      <BarButton
+      <RailButton
         label="Focus mode"
         value={focus ? "Scenery only" : "Just travel"}
         glyph={focus ? "◉" : "◎"}
@@ -119,48 +92,74 @@ export function BottomBar({
         pressed={focus}
       />
 
-      <button type="button" onClick={onShare} className="share-key ml-auto">
+      {/*
+        Where you are sitting.
+        v3 dropped the door-view video, so this is not a different plate — it
+        changes how the same plate is framed and how hard it moves: a door seat
+        sits nearer the opening, so the view is faster and shakier. Honest about
+        what it is rather than promising footage that does not exist.
+      */}
+      <fieldset className="mt-2 border-t border-gold/15 pt-2">
+        <legend className="sr-only">Journey mode</legend>
+        <p className="chip-label mb-1">Journey mode</p>
+        <div className="flex gap-1">
+          {(
+            [
+              { id: "window", label: "Window", glyph: "▤" },
+              { id: "door", label: "Door", glyph: "▥" },
+            ] as const
+          ).map((o) => (
+            <button
+              key={o.id}
+              type="button"
+              role="radio"
+              aria-checked={seat === o.id}
+              onClick={() => onSeat(o.id)}
+              className="mode-key flex-1 justify-center"
+              data-on={seat === o.id}
+            >
+              <span aria-hidden>{o.glyph}</span>
+              {o.label}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+
+      <button type="button" onClick={onShare} className="share-key mt-2 w-full justify-center">
         <span aria-hidden>⤴</span> {shareNote ?? "Share journey"}
       </button>
     </div>
   );
 }
 
-function BarButton({
+function RailButton({
   label,
   value,
   glyph,
   onClick,
-  after,
   pressed,
 }: {
   label: string;
   value: string;
   glyph: string;
   onClick: () => void;
-  after?: string;
   pressed?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="panel chip bar-chip"
+      className="rail-chip"
       aria-pressed={pressed}
       aria-label={`${label}: ${value}. Change`}
     >
-      <span aria-hidden className="text-gold/80">
+      <span aria-hidden className="w-4 shrink-0 text-center text-gold/80">
         {glyph}
       </span>
-      <span className="text-left">
-        <span className="chip-label block">{label}</span>
-        <span className="chip-value block capitalize">{value}</span>
+      <span className="min-w-0 flex-1 text-left">
+        <span className="chip-label block truncate">{label}</span>
+        <span className="chip-value block truncate capitalize">{value}</span>
       </span>
-      {after && (
-        <span aria-hidden className="ml-1 text-gold/60">
-          {after}
-        </span>
-      )}
     </button>
   );
 }

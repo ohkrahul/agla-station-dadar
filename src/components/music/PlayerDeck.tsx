@@ -47,13 +47,15 @@ export function PlayerDeck({ radio }: { radio: Radio }) {
         <p className="mt-0.5 truncate text-[1.15rem] leading-tight text-cream-lit">
           {current?.title ?? "—"}
         </p>
-        <p className="truncate text-[0.8rem] text-cream-lit/60">
+        {/* Wraps rather than truncates: the column has spare height, and a
+            cut-off artist name is worse than a second line. */}
+        <p className="line-clamp-2 text-[0.8rem] leading-snug text-cream-lit/60">
           {current ? `${current.artist} • ${current.year}` : ""}
         </p>
 
         {current && (
-          <p className="chip-label mt-1 text-gold/70">
-            {bucketLabels[current.buckets[0]]} · Auto reverse · FM/AM
+          <p className="chip-label mt-1 truncate text-gold/70">
+            {bucketLabels[current.buckets[0]]}
           </p>
         )}
 
