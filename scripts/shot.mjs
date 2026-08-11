@@ -123,16 +123,24 @@ for (const vp of VIEWPORTS) {
 
     /*
      * The window is the whole point of the scene, so no panel may sit on the
-     * glass. This is a real regression that shipped once: the deck and the
-     * control bar together needed more wall than the carriage leaves below the
-     * window, so the deck rode up over it.
+     * glass. Two regressions shipped before this check existed: the deck rode up
+     * over the window because it and the control bar needed more wall than the
+     * carriage leaves, and the indicator was mounted across the top of the glass.
      *
-     * The indicator is exempt — it is mounted on the frame deliberately.
+     * Nothing is exempt now. The arrival board is not listed because it lives
+     * inside the window on purpose and only during a stop.
      */
     const glass = document.querySelector(".window-box")?.getBoundingClientRect();
     const covering = [];
     if (glass) {
-      for (const sel of [".console-mount", ".top-mount", ".rail-mount", ".carriage-props"]) {
+      for (const sel of [
+        ".console-mount",
+        ".top-mount",
+        ".rail-mount",
+        ".carriage-props",
+        ".led-mount",
+        ".control-mount",
+      ]) {
         const el = document.querySelector(sel);
         if (!el) continue;
         const b = el.getBoundingClientRect();

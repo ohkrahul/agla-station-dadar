@@ -177,6 +177,19 @@ body {
    and the deck below: those are the areas of carriage the photo leaves free.
    ========================================================================== */
 
+/* The scene is a physical object, not a document: a blue selection highlight
+   dragged across a station name reads as a rendering fault. Chrome text is not
+   selectable; Share journey copies the details instead. */
+.panel,
+.led-board,
+.route-rail,
+.control-rail,
+.carriage-props,
+.player-deck {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 .panel {
   background:
     linear-gradient(180deg, rgb(30 27 22 / 0.9), rgb(14 13 11 / 0.94));
@@ -295,12 +308,14 @@ body {
   padding: 0.7rem 0.75rem;
 }
 
+/* Below the glass, on the bulkhead between the window and the deck. It used to
+   ride the top edge of the window, which put it over the one thing the scene
+   exists to show. */
 .led-mount {
   position: absolute;
   left: 50%;
   translate: -50% 0;
-  /* Rides the top edge of the glass, as a real indicator does. */
-  top: 6.2rem;
+  top: calc(var(--window-bottom) + 0.7rem);
   width: min(26rem, 44vw);
 }
 
@@ -518,14 +533,9 @@ body {
    Journey mode and bottom bar controls
    -------------------------------------------------------------------------- */
 
+/* Inside the control rail, so it inherits the rail's width. */
 .journey-mode {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0.4rem;
-  height: 100%;
-  width: min(11rem, 16vw);
-  padding: 0.6rem 0.65rem;
+  min-width: 0;
 }
 
 .mode-key {
@@ -1281,9 +1291,9 @@ body {
    -------------------------------------------------------------------------- */
 
 @media (orientation: portrait) {
+  /* Journey mode stays — the two-column grid has a spare cell for it. */
   .rail-mount,
-  .carriage-props,
-  .journey-mode {
+  .carriage-props {
     display: none;
   }
 
@@ -1351,6 +1361,11 @@ body {
     padding: 0.55rem;
   }
 
+  /* Full width, so the knob stays on the same row as everything else. */
+  .console-mount > .player-deck {
+    width: 100%;
+  }
+
   /* The deck is short enough now to stay a single row on a phone. */
   .deck-art {
     width: 4.75rem;
@@ -1369,12 +1384,43 @@ body {
     padding-left: 0;
   }
 
-  /* Two columns of chips: three rows is still shorter than a scrolling strip
-     that hides half the controls off the right edge. */
-  .bottom-bar {
+  /*
+   * A vertical rail on the right would eat the window, which on a phone is small
+   * already. So the controls sit between the indicator and the deck as a
+   * two-column grid — the same set, laid out across instead of down.
+   */
+  .control-mount {
+    left: 0.6rem;
+    right: 0.6rem;
+    width: auto;
+    top: calc(var(--plate-bottom) + 5rem);
+    /* Bounded by the deck so the two can never overlap. */
+    bottom: calc(var(--deck-h) + 1.2rem);
+    align-items: start;
+  }
+
+  .control-rail {
+    display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    height: auto;
-    gap: 0.4rem;
+    align-content: start;
+    gap: 0.35rem;
+    padding: 0.5rem;
+  }
+
+  /* The heading, journey mode and the share key run the grid's full width. */
+  .control-rail > p,
+  .control-rail > .journey-mode,
+  .control-rail > .share-key {
+    grid-column: 1 / -1;
+  }
+
+  .journey-mode {
+    margin-top: 0.15rem;
+    padding-top: 0.35rem;
+  }
+
+  .rail-chip + .rail-chip {
+    margin-top: 0;
   }
 
   .share-key {

@@ -99,7 +99,7 @@ export function ControlRail({
         sits nearer the opening, so the view is faster and shakier. Honest about
         what it is rather than promising footage that does not exist.
       */}
-      <fieldset className="mt-2 border-t border-gold/15 pt-2">
+      <fieldset className="journey-mode mt-2 border-t border-gold/15 pt-2">
         <legend className="sr-only">Journey mode</legend>
         <p className="chip-label mb-1">Journey mode</p>
         <div className="flex gap-1">

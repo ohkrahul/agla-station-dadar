@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 
-import { WINDOW_RECT, rectToStyle } from "@/lib/geometry";
+import { WINDOW_BOTTOM, WINDOW_RECT, rectToStyle } from "@/lib/geometry";
 import { LINE_NAME, terminus, type Station } from "@/data/stations";
 import { moodOrder, moods, type MoodId } from "@/data/moods";
 import type { SongBucket } from "@/data/songs";
@@ -80,6 +80,8 @@ export function TrainExperience() {
       className="relative h-dvh w-screen overflow-hidden bg-ink"
       style={
         {
+          /* Where the glass ends, so panels can be anchored clear of it. */
+          "--window-bottom": `${WINDOW_BOTTOM}%`,
           "--wash": mood.wash,
           "--wash-strength": mood.washStrength,
           "--dim": mood.dim,
