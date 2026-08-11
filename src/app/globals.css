@@ -1,0 +1,746 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   AGLA STATION — material tokens
+   Colours are sampled from the physical carriage, not from a UI palette:
+   faded enamel paint, aged stainless steel, the classic seat blue, and the
+   ochre of an Indian Railways destination board.
+   ========================================================================== */
+
+@theme {
+  --color-cream: #d3c7ac;
+  --color-cream-lit: #e2d8c1;
+  --color-cream-deep: #b3a789;
+
+  --color-steel: #8a8b85;
+  --color-steel-dark: #5b5e5a;
+  --color-steel-lit: #a8a9a2;
+
+  --color-local-blue: #2b5f92;
+  --color-railway-yellow: #ebaf23;
+  --color-monsoon: #6e7c85;
+  --color-ink: #1a1815;
+
+  /* Barlow Condensed carries no Devanagari, so Mukta sits behind it in the
+     stack: font fallback is per glyph, which means Latin renders as painted
+     signage and Devanagari falls through to Mukta instead of a system default. */
+  --font-signage: var(--font-barlow-condensed), var(--font-mukta), "Arial Narrow",
+    sans-serif;
+  --font-body: var(--font-mukta), system-ui, sans-serif;
+  --font-ticket: var(--font-courier-prime), ui-monospace, monospace;
+}
+
+:root {
+  /* Journey-wide grade. Each mood re-tints the whole carriage from here. */
+  --wash: transparent;
+  --wash-strength: 0;
+
+  /* Carriage vibration amplitude. Zeroed for reduced-motion and at rest. */
+  --shake: 0px;
+
+  /*
+   * Portrait zoom — a calibration knob.
+   *
+   * A 16:9 plate fitted to a phone's width leaves a window only ~120px tall,
+   * which is a weak hero. Scaling the plate past the viewport puts the window
+   * at roughly 80% of screen width and crops the carriage sides, reading as
+   * sitting closer to the glass rather than as a careless crop (§8 step 10).
+   *
+   * Raising this steals height from the wall below, where the mood switch,
+   * signage, fan key and player all have to fit — and the player cannot shrink
+   * below 200px without breaking §6.
+   *
+   * This is the ONLY lever that reclaims wall height. The stack packs from the
+   * top of `.lower`, so padding or gaps at the bottom change nothing; content
+   * that does not fit simply runs off the screen edge.
+   */
+  --portrait-zoom: 1.34;
+
+  /* How much of the photograph's bottom edge the CSS wall fades over. */
+  --wall-fade: 72px;
+}
+
+/* --------------------------------------------------------------------------
+   One fixed scene. No scroll in either axis (§10).
+   -------------------------------------------------------------------------- */
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  margin: 0;
+  background: var(--color-ink);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  touch-action: manipulation;
+}
+
+/* Quality floor: keyboard focus must stay visible against metal and photo. */
+:focus-visible {
+  outline: 2px solid var(--color-railway-yellow);
+  outline-offset: 2px;
+  border-radius: 1px;
+}
+
+/* --------------------------------------------------------------------------
+   The plate: the carriage photograph, and the coordinate space the window
+   rectangle is measured in.
+
+   Landscape reproduces object-fit: cover exactly — width is whichever of the
+   two candidates is larger, which guarantees the plate covers the viewport in
+   both axes. Doing it with an explicitly sized box rather than object-fit means
+   percentage coordinates inside it still land on the right part of the image.
+
+   Pinned to the top, not centred: the window lives in the upper two-thirds, so
+   when the plate overflows it is the empty lower cream panel that gets cropped.
+   -------------------------------------------------------------------------- */
+
+.plate {
+  --plate-ratio: 2752 / 1536;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  translate: -50% 0;
+  width: max(100vw, calc(100dvh * var(--plate-ratio)));
+  aspect-ratio: var(--plate-ratio);
+}
+
+/* Portrait sits closer to the glass instead of fitting the whole carriage. */
+@media (orientation: portrait) {
+  :root {
+    /* Where the photograph stops and the CSS carriage wall takes over. */
+    --plate-bottom: calc(100vw * var(--portrait-zoom) * 1536 / 2752);
+  }
+
+  .plate {
+    width: calc(100vw * var(--portrait-zoom));
+  }
+}
+
+/* --------------------------------------------------------------------------
+   The lower carriage: where the player and the signage are mounted.
+
+   Landscape puts it over the photograph's own empty cream panel, which is the
+   breathing room §4.1's prompt asked the model to leave. Portrait runs out of
+   photograph long before it runs out of screen, so the carriage wall is
+   continued in CSS below the plate and the seam is faded out.
+   -------------------------------------------------------------------------- */
+
+.lower {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  top: var(--window-bottom);
+}
+
+/* Plate height in portrait, i.e. where the photograph stops. */
+.portrait-wall {
+  display: none;
+}
+
+@media (orientation: portrait) {
+  /* Signage above the player, both full-width — a flex row cannot fit a
+     356px-minimum player and a destination plate inside 390px. */
+  .lower {
+    top: var(--plate-bottom);
+    flex-direction: column-reverse;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+
+  .signage-plate {
+    width: 100%;
+    max-width: none;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  /* The Latin label already names the mood; at 0.68rem the Devanagari is barely
+     legible and costs 16px of wall the player needs more. */
+  .mood-sublabel {
+    display: none;
+  }
+
+  /* Starts above where the photograph ends so its transparent-to-cream ramp
+     blends over the photo's own bottom edge instead of butting against it. */
+  .portrait-wall {
+    display: block;
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    top: calc(var(--plate-bottom) - var(--wall-fade));
+    background: linear-gradient(
+      180deg,
+      transparent 0,
+      var(--color-cream) var(--wall-fade),
+      var(--color-cream-deep) 80%,
+      var(--color-steel-dark) 100%
+    );
+  }
+}
+
+/* --------------------------------------------------------------------------
+   The player screen. Sizing is a compliance constraint, not taste (§6).
+
+   Portrait is width-driven. Landscape is height-driven, because the band below
+   the window is the scarce axis there — and the 200px floor deliberately wins
+   over the band when the viewport is short, rather than shrinking the player
+   below what YouTube's terms allow.
+   -------------------------------------------------------------------------- */
+
+.player-screen {
+  aspect-ratio: 16 / 9;
+  width: min(480px, calc(100vw - 32px));
+  min-height: 200px;
+}
+
+/* --------------------------------------------------------------------------
+   Mood switch. A DOM child of `.lower` so portrait can place it in flow, in the
+   empty wall under the window. Landscape lifts it out to the top-right corner —
+   `fixed` rather than `absolute` because its parent is the lower band, and the
+   scene never scrolls so the two behave identically here.
+   -------------------------------------------------------------------------- */
+
+.mood-switch {
+  align-self: stretch;
+}
+
+@media (orientation: landscape) {
+  .mood-switch {
+    position: fixed;
+    top: 0.75rem;
+    right: 0.75rem;
+  }
+}
+
+/* Portrait has vertical room to spare, so the console stacks under the screen. */
+.entertainment-unit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.unit-console {
+  width: min(480px, calc(100vw - 32px));
+}
+
+/*
+ * Portrait folds the console into a grid so it costs three rows instead of five:
+ * transport shares a row with the focus key, and the two faders sit side by
+ * side. Stacked, the ambience fader and focus key fell off a 390x844 screen.
+ */
+@media (orientation: portrait) {
+  .unit-console {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    column-gap: 0.5rem;
+    row-gap: 0.3rem;
+  }
+
+  .unit-head,
+  .unit-now,
+  .unit-mixer {
+    grid-column: 1 / -1;
+  }
+
+  /* One line only; the full text stays available to screen readers. */
+  .unit-now {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    overflow: hidden;
+  }
+
+  .unit-mixer {
+    flex-direction: row;
+    gap: 0.75rem;
+  }
+
+  .unit-mixer > label {
+    min-width: 0;
+    flex: 1;
+  }
+}
+
+@media (orientation: landscape) {
+  .player-screen {
+    width: auto;
+    /* The 56px allowance is the unit's own padding and gaps. The console sits
+       beside the screen in this orientation, so it costs no height. */
+    height: max(200px, min(270px, calc((100dvh - 56px) * 0.319)));
+    max-width: calc(60vw);
+  }
+
+  .entertainment-unit {
+    flex-direction: row;
+    align-items: stretch;
+    gap: 0.625rem;
+  }
+
+  .unit-console {
+    width: clamp(11rem, 17vw, 15rem);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Type roles
+   -------------------------------------------------------------------------- */
+
+.t-signage {
+  font-family: var(--font-signage);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 0.92;
+}
+
+.t-devanagari {
+  font-family: var(--font-body);
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+/* Small caps label, e.g. WESTERN LINE, ENTERTAINMENT UNIT. */
+.t-label {
+  font-family: var(--font-signage);
+  font-weight: 500;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+}
+
+/*
+ * Devanagari sitting inside a letter-spaced signage label.
+ *
+ * Tracking is what makes Latin signage read as painted, but it pulls the
+ * shirorekha apart and breaks conjuncts in Devanagari, so it has to be reset
+ * rather than inherited. Any Devanagari inside .t-label needs this.
+ */
+.t-dev-inline {
+  font-family: var(--font-body);
+  font-weight: 600;
+  letter-spacing: 0;
+  font-size: 1.1em;
+}
+
+/* Printed on paper, not painted on metal. Ticket readouts only. */
+.t-ticket {
+  font-family: var(--font-ticket);
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --------------------------------------------------------------------------
+   The one aesthetic risk: chrome type is silkscreened INTO the metal rather
+   than floating above the photograph. Decorative and label type only —
+   never station names, song titles or controls, which stay fully legible.
+   -------------------------------------------------------------------------- */
+
+.paint {
+  color: var(--color-ink);
+  opacity: 0.62;
+  mix-blend-mode: multiply;
+}
+
+/* Engraved plate lettering: a cut groove reads as light from above. */
+.engraved {
+  color: color-mix(in srgb, var(--color-steel-dark) 55%, black);
+  text-shadow: 0 1px 0 color-mix(in srgb, var(--color-steel-lit) 90%, transparent);
+}
+
+/* --------------------------------------------------------------------------
+   Materials
+   -------------------------------------------------------------------------- */
+
+/* Brushed stainless. The fine repeating gradient is the brush grain. */
+.mat-steel {
+  background-image:
+    repeating-linear-gradient(
+      92deg,
+      color-mix(in srgb, var(--color-steel-lit) 55%, transparent) 0 1px,
+      transparent 1px 3px
+    ),
+    linear-gradient(
+      168deg,
+      var(--color-steel-lit) 0%,
+      var(--color-steel) 42%,
+      var(--color-steel-dark) 100%
+    );
+}
+
+/* Enamel paint over metal: slightly uneven, worn brighter at the top edge. */
+.mat-cream {
+  background-image:
+    radial-gradient(
+      120% 90% at 30% 0%,
+      color-mix(in srgb, var(--color-cream-lit) 85%, transparent) 0%,
+      transparent 60%
+    ),
+    linear-gradient(180deg, var(--color-cream) 0%, var(--color-cream-deep) 100%);
+}
+
+/* A machined edge: bright top highlight, shadow underneath. */
+.edge-machined {
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--color-steel-lit) 90%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, black 22%, transparent),
+    0 1px 2px color-mix(in srgb, black 28%, transparent);
+}
+
+/* Drilled and bolted, as everything in a local actually is. */
+.bolt {
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  background:
+    radial-gradient(circle at 34% 30%, var(--color-steel-lit), var(--color-steel-dark) 70%);
+  box-shadow:
+    inset 0 0 0 0.5px color-mix(in srgb, black 45%, transparent),
+    0 1px 1px color-mix(in srgb, black 40%, transparent);
+}
+
+/* --------------------------------------------------------------------------
+   Ambient motion. Amplitude is driven by --shake so a single variable
+   controls the whole carriage: at rest, travelling, braking.
+   -------------------------------------------------------------------------- */
+
+@keyframes carriage-shake {
+  0%   { transform: translate3d(0, 0, 0); }
+  25%  { transform: translate3d(calc(var(--shake) * -0.6), var(--shake), 0); }
+  50%  { transform: translate3d(var(--shake), calc(var(--shake) * -0.4), 0); }
+  75%  { transform: translate3d(calc(var(--shake) * 0.3), var(--shake), 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+
+.carriage-shake {
+  animation: carriage-shake 260ms steps(4, end) infinite;
+  will-change: transform;
+}
+
+@keyframes fan-spin {
+  to { transform: rotate(360deg); }
+}
+
+/*
+ * Travel for the moods with no video (§3, §7.2).
+ *
+ * The ribbon is two copies of a mirror-doubled tile, so translating it by
+ * exactly half its width returns to an identical arrangement — an endless,
+ * one-directional, seam-free scroll at constant speed. Right to left, matching
+ * the Monsoon plate.
+ *
+ * An earlier version panned a single image back and forth; there was only ~26%
+ * of spare width to move through, so it read as a static photograph.
+ *
+ * ponytail: one flat plane, so there is no depth parallax — near track and far
+ * skyline travel at the same rate. Upgrade path if that ever grates: separate
+ * fore/mid/far tiles on their own ribbons at different durations.
+ */
+@keyframes env-scroll {
+  to { transform: translateX(-50%); }
+}
+
+.env-still {
+  overflow: hidden;
+}
+
+.env-ribbon {
+  display: flex;
+  width: max-content;
+  height: 100%;
+  animation: env-scroll 70s linear infinite;
+  will-change: transform;
+}
+
+.env-ribbon img {
+  height: 100%;
+  width: auto;
+  max-width: none;
+  /* The mirrored halves must butt exactly; any gap would strobe once a loop. */
+  display: block;
+}
+
+/* Interior colour grade. One overlay for the whole carriage so a mood change
+   shifts the metal and the view together instead of only the window. */
+.wash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: soft-light;
+  background: var(--wash);
+  opacity: var(--wash-strength);
+  transition: opacity 900ms ease, background-color 900ms ease;
+}
+
+/* --------------------------------------------------------------------------
+   Physical controls. These sit OUTSIDE the iframe and drive it through the
+   documented API — nothing is ever drawn over the player itself (§6).
+   -------------------------------------------------------------------------- */
+
+.push-key {
+  padding-top: 0.28rem;
+  padding-bottom: 0.28rem;
+  border-radius: 2px;
+  font-family: var(--font-signage);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: color-mix(in srgb, var(--color-ink) 82%, transparent);
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-cream-lit) 92%, transparent),
+    var(--color-cream-deep)
+  );
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.5),
+    0 2px 0 color-mix(in srgb, var(--color-steel-dark) 90%, black),
+    0 3px 4px rgb(0 0 0 / 0.35);
+  transition: transform 60ms ease, box-shadow 60ms ease;
+}
+
+.push-key:hover:not(:disabled) {
+  background-image: linear-gradient(180deg, var(--color-cream-lit), var(--color-cream));
+}
+
+/* Real travel: the key drops onto its seat and the shadow collapses. */
+.push-key:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow:
+    inset 0 1px 2px rgb(0 0 0 / 0.4),
+    0 0 0 color-mix(in srgb, var(--color-steel-dark) 90%, black);
+}
+
+.push-key:disabled {
+  opacity: 0.4;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.25),
+    0 2px 0 color-mix(in srgb, var(--color-steel-dark) 60%, black);
+}
+
+.volume-slider {
+  appearance: none;
+  height: 5px;
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, black 45%, transparent),
+    color-mix(in srgb, var(--color-steel) 70%, transparent)
+  );
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.5);
+}
+
+.volume-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 13px;
+  height: 17px;
+  border-radius: 2px;
+  background-image: linear-gradient(180deg, var(--color-cream-lit), var(--color-cream-deep));
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.6);
+}
+
+.volume-slider::-moz-range-thumb {
+  width: 13px;
+  height: 17px;
+  border: none;
+  border-radius: 2px;
+  background-image: linear-gradient(180deg, var(--color-cream-lit), var(--color-cream-deep));
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.55);
+}
+
+/* Focus mode: chrome fades out but keeps its box, so nothing reflows and the
+   player never moves under the pointer. `inert` handles the keyboard side. */
+.chrome-layer {
+  transition: opacity 500ms ease;
+}
+
+.chrome-layer.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* A halted train stops the scenery, but not the rain — it is still raining
+   while you stand at the platform. */
+.is-halted .env-ribbon {
+  animation-play-state: paused;
+}
+
+/* --------------------------------------------------------------------------
+   Arrival board.
+
+   Travels in from the right and decelerates onto its mark. The easing is the
+   whole point: a linear slide reads as an animation, while a long tail reads as
+   a heavy object being brought to rest by a braking train.
+   -------------------------------------------------------------------------- */
+
+.arrival-board {
+  position: absolute;
+  right: 6%;
+  top: 8%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  translate: 130% 0;
+  opacity: 0;
+  transition:
+    translate 3.4s cubic-bezier(0.12, 0.78, 0.12, 1),
+    opacity 700ms ease;
+}
+
+.arrival-board.is-in {
+  translate: 0 0;
+  opacity: 1;
+}
+
+.board-plate {
+  padding: 0.5rem 1.35rem 0.6rem;
+  border-radius: 2px;
+  text-align: center;
+  color: var(--color-ink);
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-railway-yellow) 92%, white),
+    var(--color-railway-yellow) 55%,
+    color-mix(in srgb, var(--color-railway-yellow) 88%, black)
+  );
+  border: 2px solid color-mix(in srgb, var(--color-ink) 72%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.45),
+    0 6px 14px rgb(0 0 0 / 0.45);
+}
+
+.board-script {
+  font-size: 1.1rem;
+  line-height: 1.2;
+}
+
+.board-script--sub {
+  font-size: 0.95rem;
+  opacity: 0.78;
+}
+
+.board-latin {
+  font-size: 1.6rem;
+  line-height: 1;
+  margin-top: 0.1rem;
+}
+
+.board-post {
+  width: 7px;
+  height: 42vh;
+  background-image: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--color-steel-dark) 80%, black),
+    var(--color-steel),
+    color-mix(in srgb, var(--color-steel-dark) 90%, black)
+  );
+}
+
+/* Smaller windows cannot carry the full plate without swamping the view. */
+@media (max-width: 560px), (orientation: portrait) {
+  .board-script {
+    font-size: 0.85rem;
+  }
+  .board-script--sub {
+    display: none;
+  }
+  .board-latin {
+    font-size: 1.15rem;
+  }
+  .board-plate {
+    padding: 0.35rem 0.8rem 0.4rem;
+  }
+}
+
+/* Reduced motion still gets the information, just without the travel. */
+@media (prefers-reduced-motion: reduce) {
+  .arrival-board {
+    transition: opacity 300ms ease;
+    translate: 0 0;
+  }
+}
+
+/* Brightness, separate from hue. Sits under the coded chrome on purpose: a
+   backlit destination board really is brighter than a dark carriage. */
+.dim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: #0a0d14;
+  opacity: var(--dim, 0);
+  transition: opacity 900ms ease;
+}
+
+/* Rain through the glass. Two sheets, different scale and speed, so the near
+   streaks outrun the far ones and the window gains depth. */
+@keyframes rain-fall {
+  to { background-position: -160px 900px; }
+}
+
+.rain-sheet {
+  position: absolute;
+  inset: -20%;
+  background-repeat: repeat;
+  animation: rain-fall linear infinite;
+  will-change: background-position;
+}
+
+.rain-sheet--near {
+  background-image: repeating-linear-gradient(
+    100deg,
+    transparent 0 7px,
+    rgba(255, 255, 255, 0.5) 7px 8px,
+    transparent 8px 15px
+  );
+  background-size: 130px 190px;
+  animation-duration: 0.62s;
+  opacity: 0.3;
+}
+
+.rain-sheet--far {
+  background-image: repeating-linear-gradient(
+    98deg,
+    transparent 0 4px,
+    rgba(255, 255, 255, 0.34) 4px 4.7px,
+    transparent 4.7px 9px
+  );
+  background-size: 80px 120px;
+  animation-duration: 1.15s;
+  opacity: 0.22;
+}
+
+@keyframes handle-sway {
+  0%, 100% { transform: rotate(-3.5deg); }
+  50%      { transform: rotate(3.5deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --shake: 0px;
+  }
+
+  /* Falls back to the reference still layered underneath (§10). */
+  .env-video {
+    display: none;
+  }
+
+  .carriage-shake,
+  .handle,
+  .rain-sheet,
+  .env-ribbon,
+  [style*="fan-spin"] {
+    animation: none !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
+}

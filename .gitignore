@@ -1,0 +1,22 @@
+node_modules/
+.next/
+out/
+build/
+
+# Never commit the Gemini key. Generation is development-only (playbook §10).
+.env
+.env.local
+.env*.local
+
+# Raw model output kept for reference; only processed assets are shipped.
+scripts/.raw/
+# Review screenshots.
+scripts/.shots/
+
+# The production playbook. Publishing the brief is a separate decision from
+# publishing the code — delete this line to include it.
+*.docx
+
+*.tsbuildinfo
+next-env.d.ts
+.DS_Store
