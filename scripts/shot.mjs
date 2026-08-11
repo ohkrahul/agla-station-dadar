@@ -138,7 +138,6 @@ for (const vp of VIEWPORTS) {
         ".top-mount",
         ".rail-mount",
         ".carriage-props",
-        ".led-mount",
         ".control-mount",
       ]) {
         const el = document.querySelector(sel);

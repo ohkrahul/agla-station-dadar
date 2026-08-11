@@ -9,12 +9,14 @@ import { moods, type MoodId } from "@/data/moods";
  */
 export function TopBar({
   station,
+  atStation,
   moodId,
   ambienceLevel,
   onAmbienceChange,
   ambienceAvailable,
 }: {
   station: Station;
+  atStation: boolean;
   moodId: MoodId;
   ambienceLevel: number;
   onAmbienceChange: (v: number) => void;
@@ -25,6 +27,18 @@ export function TopBar({
   return (
     <div className="top-bar">
       <Wordmark />
+
+      {/*
+        Portrait only. The route rail carries this on wider screens, but portrait
+        hides the rail for want of width — without this a phone would show no
+        station name at all between stops.
+      */}
+      <div className="panel chip chip-portrait" role="status" aria-live="polite">
+        <div>
+          <p className="chip-label">{atStation ? "This station" : "Next station"}</p>
+          <p className="chip-value">{station.english}</p>
+        </div>
+      </div>
 
       {/* Dropped on portrait: the indicator already says where you are, and the
           wordmark already says what this is. */}
@@ -47,7 +61,9 @@ export function TopBar({
         </div>
       </div>
 
-      <div className="panel chip">
+      {/* Also portrait-secondary: the rail's Weather control already reports it,
+          and the bar cannot hold the station, the weather and the fader at 390px. */}
+      <div className="panel chip chip-secondary">
         <span aria-hidden className="text-[1.1rem] leading-none">
           {mood.glyph}
         </span>

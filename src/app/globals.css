@@ -25,8 +25,6 @@
      so labels and active states carry in gold rather than in painted cream. */
   --color-gold: #f0b429;
   --color-gold-dim: #b9862a;
-  /* Dot-matrix orange, as on a real platform indicator. */
-  --color-led: #ff9a2b;
 
   /* Barlow Condensed carries no Devanagari, so Mukta sits behind it in the
      stack: font fallback is per glyph, which means Latin renders as painted
@@ -57,10 +55,9 @@
    * signage, fan key and player all have to fit — and the player cannot shrink
    * below 200px without breaking §6.
    *
-   * Portrait hides the route rail, wall props and journey mode, and the compact
-   * indicator costs about 60px, which is what buys the window this much. The
-   * plate is also offset down to clear the top bar, so this cannot go much
-   * higher without the indicator meeting the console.
+   * Portrait hides the route rail and the wall props, which is what buys the
+   * window this much. The plate is also offset down to clear the top bar, so
+   * this cannot go much higher without the controls meeting the console.
    */
   --portrait-zoom: 1.5;
 
@@ -181,7 +178,6 @@ body {
    dragged across a station name reads as a rendering fault. Chrome text is not
    selectable; Share journey copies the details instead. */
 .panel,
-.led-board,
 .route-rail,
 .control-rail,
 .carriage-props,
@@ -209,6 +205,12 @@ body {
   padding: 0.4rem 0.7rem;
   border-radius: 3px;
   color: color-mix(in srgb, var(--color-cream-lit) 88%, transparent);
+}
+
+/* Shown only where the route rail is not: see TopBar. Must come after .chip,
+   which sets display: flex and would otherwise win on source order. */
+.chip-portrait {
+  display: none;
 }
 
 .chip-label {
@@ -306,17 +308,6 @@ body {
   flex-direction: column;
   width: 100%;
   padding: 0.7rem 0.75rem;
-}
-
-/* Below the glass, on the bulkhead between the window and the deck. It used to
-   ride the top edge of the window, which put it over the one thing the scene
-   exists to show. */
-.led-mount {
-  position: absolute;
-  left: 50%;
-  translate: -50% 0;
-  top: calc(var(--window-bottom) + 0.7rem);
-  width: min(26rem, 44vw);
 }
 
 /*
@@ -753,56 +744,6 @@ body {
 .rail-stop[data-state="current"] .rail-dot {
   background: var(--color-gold);
   box-shadow: 0 0 10px rgb(240 180 41 / 0.55);
-}
-
-/* --------------------------------------------------------------------------
-   LED destination board — a real dot-matrix indicator, not a text label.
-   The dot grid is a repeating radial mask over the glowing text layer.
-   -------------------------------------------------------------------------- */
-
-.led-board {
-  position: relative;
-  background: linear-gradient(180deg, #14120f, #0a0908);
-  border: 1px solid rgb(240 180 41 / 0.22);
-  border-radius: 3px;
-  box-shadow: inset 0 0 22px rgb(255 154 43 / 0.09), 0 8px 20px rgb(0 0 0 / 0.5);
-  overflow: hidden;
-}
-
-.led-text {
-  font-family: var(--font-signage);
-  color: var(--color-led);
-  text-shadow: 0 0 9px rgb(255 154 43 / 0.65);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.led-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 1.5rem;
-  padding: 0 1.25rem 0.5rem;
-}
-
-.led-script {
-  font-size: 1.4rem;
-}
-
-.led-latin {
-  font-size: 1.6rem;
-  white-space: nowrap;
-}
-
-/* The scan grid. Sits above the text at low opacity so glyphs read as lit
-   dots rather than as solid strokes. */
-.led-board::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image: radial-gradient(rgb(0 0 0 / 0.55) 42%, transparent 43%);
-  background-size: 3px 3px;
 }
 
 /* --------------------------------------------------------------------------
@@ -1310,41 +1251,21 @@ body {
     width: 4.5rem;
   }
 
-  /* Compact board: one script pair, tighter type, so it costs about 60px of the
-     column instead of 110. */
-  .led-hindi {
-    display: none;
-  }
-
-  .led-row {
-    gap: 0.9rem;
-    padding: 0 0.6rem 0.4rem;
-  }
-
-  .led-script {
-    font-size: 0.95rem;
-  }
-
-  .led-latin {
-    font-size: 1.15rem;
-  }
+  
 
   /* :nth-of-type counts tags, not classes, so these need a real class. */
   .chip-secondary {
     display: none;
   }
 
+  /* The route rail is hidden here, so this is the only station readout. */
+  .chip-portrait {
+    display: flex;
+  }
+
   /* Directly under the photograph, not over the glass: on a phone the window is
      too small to give any of it away. Anchored to the plate rather than to the
      bottom, which is what previously landed it behind the deck. */
-  .led-mount {
-    left: 0.6rem;
-    right: 0.6rem;
-    translate: none;
-    width: auto;
-    top: calc(var(--plate-bottom) + 0.5rem);
-    bottom: auto;
-  }
 
   /* A phone cannot hold the band in one row, so the console becomes a column:
      deck, then the controls beneath it. */

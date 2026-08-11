@@ -10,7 +10,6 @@ import type { SongBucket } from "@/data/songs";
 import { EnvironmentMedia } from "./EnvironmentMedia";
 import { BoardTrain } from "./BoardTrain";
 import { ArrivalBoard } from "./ArrivalBoard";
-import { LedBoard } from "./LedBoard";
 import { RouteRail } from "./RouteRail";
 import { TopBar } from "./TopBar";
 import { CarriageProps } from "./CarriageProps";
@@ -127,18 +126,13 @@ export function TrainExperience() {
       <div className="wash" aria-hidden />
       <div className="dim" aria-hidden />
 
-      {/* The indicator is fixed to the carriage above the glass, so it belongs
-          to the plate's column rather than to the chrome that can be hidden. */}
-      <div className="led-mount">
-        <LedBoard station={journey.station} atStation={journey.atStation} />
-      </div>
-
       {/* Focus mode strips the carriage back to scenery, audio and the player
           (§7.3). Chrome fades rather than unmounting, so nothing reflows. */}
       <div className={`chrome-layer ${focus ? "is-hidden" : ""}`} inert={focus}>
         <div className="top-mount">
           <TopBar
             station={journey.station}
+            atStation={journey.atStation}
             moodId={moodId}
             ambienceLevel={Math.round(ambience.volume * 100)}
             onAmbienceChange={(v) => ambience.setVolume(v / 100)}
