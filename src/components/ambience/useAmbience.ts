@@ -37,10 +37,13 @@ export function useAmbience({
   boarded,
   phase,
   raining,
+  announcements,
 }: {
   boarded: boolean;
   phase: Phase;
   raining: boolean;
+  /** When off, the station cue is silenced but the beds keep running. */
+  announcements: boolean;
 }) {
   const elements = useRef<Partial<Record<LayerName, HTMLAudioElement>>>({});
   const [available, setAvailable] = useState<boolean | null>(null);
@@ -96,13 +99,13 @@ export function useAmbience({
 
   // Door cue fires once, on arrival.
   useEffect(() => {
-    if (!boarded || phase !== "arriving") return;
+    if (!boarded || phase !== "arriving" || !announcements) return;
     const el = elements.current.door;
     if (!el) return;
     el.currentTime = 0;
     el.volume = muted ? 0 : Math.min(1, volume * 0.9);
     void el.play().catch(() => {});
-  }, [boarded, phase, volume, muted]);
+  }, [boarded, phase, volume, muted, announcements]);
 
   return { available, volume, setVolume, muted, setMuted };
 }

@@ -25,7 +25,13 @@ export const stations: Station[] = [
   { id: "bandra", english: "Bandra", marathi: "वांद्रे", hindi: "बांद्रा" },
   { id: "andheri", english: "Andheri", marathi: "अंधेरी", hindi: "अंधेरी" },
   { id: "borivali", english: "Borivali", marathi: "बोरिवली", hindi: "बोरिवली" },
+  { id: "virar", english: "Virar", marathi: "विरार", hindi: "विरार" },
 ];
+
+/** Shown on the line selector and the route rail footer. */
+export const LINE_NAME = "Western Line";
+export const origin = stations[0];
+export const terminus = stations[stations.length - 1];
 
 /**
  * Journey pacing. The real Churchgate–Borivali run is about an hour; a website

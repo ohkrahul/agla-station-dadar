@@ -12,6 +12,12 @@ export type Mood = {
   /** Shown on the switch. The playbook's own names — keep them. */
   label: string;
   sublabel: string;
+  /**
+   * Readout for the top bar. Not a live forecast — it describes the scene you
+   * chose, which is the only honest thing a static asset can report.
+   */
+  weather: string;
+  glyph: string;
   media:
     | { kind: "video"; src: string; poster: string }
     /** `tile` is the mirror-doubled version, built by scripts/make-tiles.mjs. */
@@ -35,6 +41,8 @@ export const moods: Record<MoodId, Mood> = {
     id: "monsoon",
     label: "Monsoon",
     sublabel: "मुंबई पाऊस",
+    weather: "28°C",
+    glyph: "🌧",
     media: {
       kind: "video",
       src: `${ENV}/monsoon-loop.mp4`,
@@ -49,6 +57,8 @@ export const moods: Record<MoodId, Mood> = {
     id: "golden",
     label: "Shaam Ki Local",
     sublabel: "संध्याकाळ",
+    weather: "31°C",
+    glyph: "🌇",
     media: {
       kind: "still",
       src: `${ENV}/golden-hour.webp`,
@@ -63,6 +73,8 @@ export const moods: Record<MoodId, Mood> = {
     id: "night",
     label: "Last Local",
     sublabel: "शेवटची लोकल",
+    weather: "24°C",
+    glyph: "🌙",
     media: {
       kind: "still",
       src: `${ENV}/night.webp`,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { DWELL_SECONDS, TRAVEL_SECONDS, stations } from "@/data/stations";
 
@@ -11,6 +11,9 @@ import { DWELL_SECONDS, TRAVEL_SECONDS, stations } from "@/data/stations";
  * of the scenery snapping between moving and still (§7.3).
  */
 export type Phase = "traveling" | "arriving" | "stopped" | "departing";
+
+/** Where the listener is sitting. Changes framing and motion, not the plate. */
+export type Seat = "window" | "door";
 
 const MS: Record<Phase, number> = {
   traveling: TRAVEL_SECONDS * 1000,
@@ -56,7 +59,14 @@ export function useJourney({ running }: { running: boolean }) {
   const station = stations[index];
   const previous = stations[(index - 1 + stations.length) % stations.length];
 
+  /** Jumping the queue from the route rail: arrive at the chosen stop. */
+  const jumpTo = useCallback((i: number) => {
+    setIndex(((i % stations.length) + stations.length) % stations.length);
+    setPhase("arriving");
+  }, []);
+
   return {
+    jumpTo,
     /** The station being approached, or stood at. */
     station,
     previous,

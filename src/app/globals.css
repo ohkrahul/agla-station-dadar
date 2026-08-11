@@ -21,6 +21,13 @@
   --color-monsoon: #6e7c85;
   --color-ink: #1a1815;
 
+  /* Chrome accent. The panels are dark smoked glass fitted into the carriage,
+     so labels and active states carry in gold rather than in painted cream. */
+  --color-gold: #f0b429;
+  --color-gold-dim: #b9862a;
+  /* Dot-matrix orange, as on a real platform indicator. */
+  --color-led: #ff9a2b;
+
   /* Barlow Condensed carries no Devanagari, so Mukta sits behind it in the
      stack: font fallback is per glyph, which means Latin renders as painted
      signage and Devanagari falls through to Mukta instead of a system default. */
@@ -50,14 +57,17 @@
    * signage, fan key and player all have to fit — and the player cannot shrink
    * below 200px without breaking §6.
    *
-   * This is the ONLY lever that reclaims wall height. The stack packs from the
-   * top of `.lower`, so padding or gaps at the bottom change nothing; content
-   * that does not fit simply runs off the screen edge.
+   * Portrait hides the route rail, wall props and journey mode, and the compact
+   * indicator costs about 60px, which is what buys the window this much.
    */
-  --portrait-zoom: 1.34;
+  --portrait-zoom: 1.62;
 
   /* How much of the photograph's bottom edge the CSS wall fades over. */
   --wall-fade: 72px;
+
+  /* Height of the player deck. The route rail stops above it, so both need the
+     same number — the deck's own height is driven by the 200px player floor. */
+  --deck-h: 15.5rem;
 }
 
 /* --------------------------------------------------------------------------
@@ -123,50 +133,15 @@ body {
 }
 
 /* --------------------------------------------------------------------------
-   The lower carriage: where the player and the signage are mounted.
-
-   Landscape puts it over the photograph's own empty cream panel, which is the
-   breathing room §4.1's prompt asked the model to leave. Portrait runs out of
-   photograph long before it runs out of screen, so the carriage wall is
-   continued in CSS below the plate and the seam is faded out.
+   Portrait runs out of photograph long before it runs out of screen, so the
+   carriage wall is continued in CSS below the plate and the seam is faded out.
    -------------------------------------------------------------------------- */
 
-.lower {
-  position: absolute;
-  inset-inline: 0;
-  bottom: 0;
-  top: var(--window-bottom);
-}
-
-/* Plate height in portrait, i.e. where the photograph stops. */
 .portrait-wall {
   display: none;
 }
 
 @media (orientation: portrait) {
-  /* Signage above the player, both full-width — a flex row cannot fit a
-     356px-minimum player and a destination plate inside 390px. */
-  .lower {
-    top: var(--plate-bottom);
-    flex-direction: column-reverse;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 0.5rem;
-  }
-
-  .signage-plate {
-    width: 100%;
-    max-width: none;
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
-  }
-
-  /* The Latin label already names the mood; at 0.68rem the Devanagari is barely
-     legible and costs 16px of wall the player needs more. */
-  .mood-sublabel {
-    display: none;
-  }
-
   /* Starts above where the photograph ends so its transparent-to-cream ramp
      blends over the photo's own bottom edge instead of butting against it. */
   .portrait-wall {
@@ -185,108 +160,561 @@ body {
   }
 }
 
-/* --------------------------------------------------------------------------
-   The player screen. Sizing is a compliance constraint, not taste (§6).
+/* ==========================================================================
+   CHROME SHELL
 
-   Portrait is width-driven. Landscape is height-driven, because the band below
-   the window is the scarce axis there — and the 200px floor deliberately wins
-   over the band when the viewport is short, rather than shrinking the player
-   below what YouTube's terms allow.
-   -------------------------------------------------------------------------- */
+   Panels are positioned in viewport coordinates and deliberately kept OUT of
+   the window rectangle, which is fixed by the photograph (23%–76% across,
+   11%–68% down). That is why the rail is on the left, the props on the right
+   and the deck below: those are the areas of carriage the photo leaves free.
+   ========================================================================== */
 
-.player-screen {
-  aspect-ratio: 16 / 9;
-  width: min(480px, calc(100vw - 32px));
-  min-height: 200px;
+.panel {
+  background:
+    linear-gradient(180deg, rgb(30 27 22 / 0.9), rgb(14 13 11 / 0.94));
+  border: 1px solid rgb(240 180 41 / 0.16);
+  border-radius: 4px;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 10px 24px rgb(0 0 0 / 0.45);
+  backdrop-filter: blur(3px);
 }
 
-/* --------------------------------------------------------------------------
-   Mood switch. A DOM child of `.lower` so portrait can place it in flow, in the
-   empty wall under the window. Landscape lifts it out to the top-right corner —
-   `fixed` rather than `absolute` because its parent is the lower band, and the
-   scene never scrolls so the two behave identically here.
-   -------------------------------------------------------------------------- */
-
-.mood-switch {
-  align-self: stretch;
-}
-
-@media (orientation: landscape) {
-  .mood-switch {
-    position: fixed;
-    top: 0.75rem;
-    right: 0.75rem;
-  }
-}
-
-/* Portrait has vertical room to spare, so the console stacks under the screen. */
-.entertainment-unit {
+/* A chip in the top or bottom rail: label above, value below. */
+.chip {
   display: flex;
-  flex-direction: column;
-  gap: 0.375rem;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.4rem 0.7rem;
+  border-radius: 3px;
+  color: color-mix(in srgb, var(--color-cream-lit) 88%, transparent);
 }
 
-.unit-console {
-  width: min(480px, calc(100vw - 32px));
+.chip-label {
+  font-family: var(--font-signage);
+  font-size: 0.58rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgb(226 216 193 / 0.5);
+  line-height: 1.1;
+}
+
+.chip-value {
+  font-family: var(--font-signage);
+  font-size: 0.82rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-cream-lit);
+  line-height: 1.1;
+}
+
+/* --------------------------------------------------------------------------
+   Mounts. Each panel is placed relative to the window rectangle the photograph
+   dictates: rail to its left, props to its right, deck and bar beneath, top bar
+   and indicator above. Nothing overlaps the glass except the indicator, which
+   sits on the frame the way a real one does.
+   -------------------------------------------------------------------------- */
+
+.window-box {
+  position: absolute;
+  overflow: hidden;
+  border-radius: 10px;
 }
 
 /*
- * Portrait folds the console into a grid so it costs three rows instead of five:
- * transport shares a row with the focus key, and the two faders sit side by
- * side. Stacked, the ambience fader and focus key fell off a 390x844 screen.
+ * Scrims.
+ *
+ * The panels carry their own background, but the wordmark and the props are bare
+ * type on a photograph — and the carriage has a bright steel roof bar exactly
+ * where the wordmark sits, which sheared it visually. These gradients give the
+ * top and bottom bands something to sit on without boxing them in.
  */
-@media (orientation: portrait) {
-  .unit-console {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    align-items: center;
-    column-gap: 0.5rem;
-    row-gap: 0.3rem;
-  }
-
-  .unit-head,
-  .unit-now,
-  .unit-mixer {
-    grid-column: 1 / -1;
-  }
-
-  /* One line only; the full text stays available to screen readers. */
-  .unit-now {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 1;
-    overflow: hidden;
-  }
-
-  .unit-mixer {
-    flex-direction: row;
-    gap: 0.75rem;
-  }
-
-  .unit-mixer > label {
-    min-width: 0;
-    flex: 1;
-  }
+.top-mount::before,
+.bar-mount::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  height: 9rem;
+  pointer-events: none;
+  z-index: -1;
 }
 
-@media (orientation: landscape) {
-  .player-screen {
-    width: auto;
-    /* The 56px allowance is the unit's own padding and gaps. The console sits
-       beside the screen in this orientation, so it costs no height. */
-    height: max(200px, min(270px, calc((100dvh - 56px) * 0.319)));
-    max-width: calc(60vw);
-  }
+.top-mount::before {
+  top: 0;
+  background: linear-gradient(180deg, rgb(10 9 8 / 0.78), rgb(10 9 8 / 0) 100%);
+}
 
-  .entertainment-unit {
-    flex-direction: row;
-    align-items: stretch;
-    gap: 0.625rem;
-  }
+.bar-mount::before {
+  bottom: 0;
+  background: linear-gradient(0deg, rgb(10 9 8 / 0.8), rgb(10 9 8 / 0) 100%);
+}
 
-  .unit-console {
-    width: clamp(11rem, 17vw, 15rem);
-  }
+.top-mount {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  padding: 0.9rem 0.9rem 0;
+  /* Establishes the stacking context the scrim's negative z-index sits in. */
+  isolation: isolate;
+}
+
+.top-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* The wordmark is type on the carriage, not a panel, so it needs its own
+   breathing room above — at the very top edge the ascenders were being cut. */
+.wordmark {
+  padding-block: 0.15rem;
+}
+
+.rail-mount {
+  position: absolute;
+  left: 0.9rem;
+  /* Below the top bar, and never taller than the space above the deck. */
+  top: 7.5rem;
+  max-height: calc(100dvh - var(--deck-h) - 12.2rem);
+  width: min(13.5rem, 21vw);
+  display: flex;
+}
+
+.route-rail {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 0.7rem 0.75rem;
+}
+
+.led-mount {
+  position: absolute;
+  left: 50%;
+  translate: -50% 0;
+  /* Rides the top edge of the glass, as a real indicator does. */
+  top: 6.2rem;
+  width: min(26rem, 44vw);
+}
+
+/* Wide because the player cannot be smaller than 356x200 and still meet §6, so
+   the metadata column has to be found alongside it rather than under it. */
+.deck-mount {
+  position: absolute;
+  left: 0.9rem;
+  bottom: 4rem;
+  width: min(45rem, 64vw);
+}
+
+.mode-mount {
+  position: absolute;
+  right: 0.9rem;
+  bottom: 4rem;
+  width: min(11rem, 18vw);
+}
+
+.bar-mount {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  padding: 0 0.9rem 0.7rem;
+  isolation: isolate;
+}
+
+.bottom-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* --------------------------------------------------------------------------
+   Player deck
+   -------------------------------------------------------------------------- */
+
+.player-deck {
+  display: flex;
+  align-items: stretch;
+  gap: 0.75rem;
+  padding: 0.7rem;
+}
+
+.deck-bay {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The player is the deck's cassette window. Sizing is compliance (§6): never
+   below 200px tall, and the ratio yields to that floor on narrow screens. */
+.player-screen {
+  aspect-ratio: 16 / 9;
+  height: 200px;
+  width: auto;
+  min-width: 0;
+  border-radius: 2px;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.8), 0 2px 8px rgb(0 0 0 / 0.5);
+}
+
+.deck-info {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.deck-knob {
+  flex: none;
+  display: flex;
+  width: 5.5rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-left: 1px solid rgb(240 180 41 / 0.14);
+  padding-left: 0.65rem;
+}
+
+.deck-key,
+.deck-play {
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--color-cream-lit);
+  background-image: linear-gradient(180deg, #3a352d, #221f1a);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.14),
+    0 2px 5px rgb(0 0 0 / 0.5);
+  transition: transform 60ms ease, filter 160ms ease;
+}
+
+.deck-key {
+  width: 2rem;
+  height: 2rem;
+  font-size: 0.8rem;
+}
+
+.deck-play {
+  width: 2.6rem;
+  height: 2.6rem;
+  font-size: 0.85rem;
+  color: var(--color-ink);
+  background-image: linear-gradient(180deg, var(--color-gold), var(--color-gold-dim));
+}
+
+.deck-key:hover:not(:disabled),
+.deck-play:hover:not(:disabled) {
+  filter: brightness(1.15);
+}
+
+.deck-key:active:not(:disabled),
+.deck-play:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.deck-key:disabled,
+.deck-play:disabled {
+  opacity: 0.4;
+}
+
+/* --------------------------------------------------------------------------
+   Journey mode and bottom bar controls
+   -------------------------------------------------------------------------- */
+
+.journey-mode {
+  padding: 0.6rem 0.65rem 0.7rem;
+}
+
+.mode-key {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.42rem 0.55rem;
+  border-radius: 3px;
+  font-family: var(--font-signage);
+  font-size: 0.74rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: rgb(226 216 193 / 0.66);
+  background: rgb(255 255 255 / 0.04);
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.mode-key:hover {
+  background: rgb(255 255 255 / 0.09);
+}
+
+.mode-key[data-on="true"] {
+  color: var(--color-ink);
+  background-image: linear-gradient(180deg, var(--color-gold), var(--color-gold-dim));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3);
+}
+
+.bar-chip {
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.bar-chip:hover {
+  border-color: rgb(240 180 41 / 0.4);
+}
+
+.bar-chip[aria-pressed="true"] .chip-value {
+  color: var(--color-gold);
+}
+
+.share-key {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1.1rem;
+  border-radius: 4px;
+  font-family: var(--font-signage);
+  font-size: 0.82rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-ink);
+  background-image: linear-gradient(180deg, var(--color-gold), var(--color-gold-dim));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3), 0 4px 12px rgb(0 0 0 / 0.4);
+  transition: filter 160ms ease, transform 60ms ease;
+}
+
+.share-key:hover {
+  filter: brightness(1.1);
+}
+
+.share-key:active {
+  transform: translateY(1px);
+}
+
+/* --------------------------------------------------------------------------
+   Carriage props, on the wall right of the glass
+   -------------------------------------------------------------------------- */
+
+.carriage-props {
+  position: absolute;
+  right: 1rem;
+  top: 9rem;
+  display: flex;
+  width: min(7rem, 12vw);
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.7rem;
+  pointer-events: none;
+}
+
+.prop-plaque,
+.prop-warning,
+.prop-sticker,
+.prop-note {
+  font-family: var(--font-signage);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.prop-plaque {
+  padding: 0.35rem 0.5rem;
+  font-size: 0.6rem;
+  line-height: 1.15;
+  text-align: center;
+  color: rgb(226 216 193 / 0.75);
+  background: rgb(20 18 15 / 0.55);
+  border: 1px solid rgb(240 180 41 / 0.18);
+  border-radius: 2px;
+}
+
+/* Enamel warning plate: railway yellow, dark rule, screwed to the panel. */
+.prop-warning {
+  padding: 0.4rem 0.5rem;
+  text-align: center;
+  color: #241d08;
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-railway-yellow) 94%, white),
+    var(--color-railway-yellow)
+  );
+  border: 1.5px solid #241d08;
+  border-radius: 2px;
+  box-shadow: 0 4px 10px rgb(0 0 0 / 0.45);
+  rotate: -1.2deg;
+}
+
+.prop-sticker {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.4rem 0.55rem;
+  color: #efe7d4;
+  background: rgb(28 25 21 / 0.85);
+  border-radius: 3px;
+  box-shadow: 0 3px 8px rgb(0 0 0 / 0.5);
+  rotate: 2deg;
+}
+
+/* Torn paper, so the note reads as handwriting rather than a caption. */
+.prop-note {
+  padding: 0.55rem 0.6rem;
+  font-family: var(--font-body);
+  font-size: 0.68rem;
+  line-height: 1.35;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: #3a3227;
+  background: #ddd2b8;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.45);
+  rotate: -2.5deg;
+  clip-path: polygon(0 3%, 96% 0, 100% 94%, 4% 100%);
+}
+
+/* --------------------------------------------------------------------------
+   Route rail
+   -------------------------------------------------------------------------- */
+
+.rail-stop {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.16rem 0;
+  width: 100%;
+  text-align: left;
+  background: none;
+  color: rgb(226 216 193 / 0.62);
+  font-family: var(--font-signage);
+  font-size: 0.8rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  transition: color 200ms ease;
+}
+
+.rail-stop:hover:not(:disabled) {
+  color: var(--color-cream-lit);
+}
+
+/* Passed stops are muted, the current one carries, upcoming sit between (§9). */
+.rail-stop[data-state="past"] {
+  color: rgb(226 216 193 / 0.3);
+}
+
+.rail-stop[data-state="current"] {
+  color: var(--color-gold);
+}
+
+/* The dot and the line through it are one element: the connector is a
+   pseudo-element so the list needs no separate rail graphic. */
+.rail-dot {
+  position: relative;
+  flex: none;
+  width: 11px;
+  height: 11px;
+  border-radius: 999px;
+  border: 1.5px solid currentColor;
+}
+
+.rail-dot::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  translate: -50% 0;
+  width: 1.5px;
+  height: calc(1.32rem);
+  background: currentColor;
+  opacity: 0.35;
+}
+
+.rail-stop:last-of-type .rail-dot::after {
+  display: none;
+}
+
+.rail-stop[data-state="current"] .rail-dot {
+  background: var(--color-gold);
+  box-shadow: 0 0 10px rgb(240 180 41 / 0.55);
+}
+
+/* --------------------------------------------------------------------------
+   LED destination board — a real dot-matrix indicator, not a text label.
+   The dot grid is a repeating radial mask over the glowing text layer.
+   -------------------------------------------------------------------------- */
+
+.led-board {
+  position: relative;
+  background: linear-gradient(180deg, #14120f, #0a0908);
+  border: 1px solid rgb(240 180 41 / 0.22);
+  border-radius: 3px;
+  box-shadow: inset 0 0 22px rgb(255 154 43 / 0.09), 0 8px 20px rgb(0 0 0 / 0.5);
+  overflow: hidden;
+}
+
+.led-text {
+  font-family: var(--font-signage);
+  color: var(--color-led);
+  text-shadow: 0 0 9px rgb(255 154 43 / 0.65);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.led-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 0 1.25rem 0.5rem;
+}
+
+.led-script {
+  font-size: 1.4rem;
+}
+
+.led-latin {
+  font-size: 1.6rem;
+  white-space: nowrap;
+}
+
+/* The scan grid. Sits above the text at low opacity so glyphs read as lit
+   dots rather than as solid strokes. */
+.led-board::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgb(0 0 0 / 0.55) 42%, transparent 43%);
+  background-size: 3px 3px;
+}
+
+/* --------------------------------------------------------------------------
+   Rotary volume knob. A real slider: role, value, arrow keys and pointer drag.
+   -------------------------------------------------------------------------- */
+
+.knob {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  touch-action: none;
+  cursor: grab;
+  background:
+    radial-gradient(circle at 50% 28%, #4a453c, #211e1a 62%, #14120f 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.16),
+    inset 0 -2px 6px rgb(0 0 0 / 0.6),
+    0 4px 10px rgb(0 0 0 / 0.5);
+}
+
+.knob:active {
+  cursor: grabbing;
+}
+
+/* The pointer line, rotated to the current value. */
+.knob-mark {
+  position: absolute;
+  left: 50%;
+  top: 6px;
+  width: 2px;
+  height: 34%;
+  translate: -50% 0;
+  transform-origin: 50% 100%;
+  border-radius: 2px;
+  background: var(--color-gold);
+  box-shadow: 0 0 6px rgb(240 180 41 / 0.7);
 }
 
 /* --------------------------------------------------------------------------
@@ -351,30 +779,12 @@ body {
 }
 
 /* Engraved plate lettering: a cut groove reads as light from above. */
-.engraved {
-  color: color-mix(in srgb, var(--color-steel-dark) 55%, black);
-  text-shadow: 0 1px 0 color-mix(in srgb, var(--color-steel-lit) 90%, transparent);
-}
 
 /* --------------------------------------------------------------------------
    Materials
    -------------------------------------------------------------------------- */
 
 /* Brushed stainless. The fine repeating gradient is the brush grain. */
-.mat-steel {
-  background-image:
-    repeating-linear-gradient(
-      92deg,
-      color-mix(in srgb, var(--color-steel-lit) 55%, transparent) 0 1px,
-      transparent 1px 3px
-    ),
-    linear-gradient(
-      168deg,
-      var(--color-steel-lit) 0%,
-      var(--color-steel) 42%,
-      var(--color-steel-dark) 100%
-    );
-}
 
 /* Enamel paint over metal: slightly uneven, worn brighter at the top edge. */
 .mat-cream {
@@ -742,5 +1152,133 @@ body {
   *::before,
   *::after {
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Portrait.
+
+   A phone has no room for a route sidebar or a wall of props, and pretending
+   otherwise is how the transport keys ended up off the bottom of the screen.
+   So those two are dropped and everything else becomes a single column: bar,
+   glass, indicator, deck. The deck stacks its own metadata under the player
+   because width, not height, is the scarce axis here.
+   -------------------------------------------------------------------------- */
+
+@media (orientation: portrait) {
+  .rail-mount,
+  .carriage-props,
+  .mode-mount {
+    display: none;
+  }
+
+  .top-mount {
+    padding: 0.6rem 0.6rem 0;
+  }
+
+  .top-bar {
+    gap: 0.4rem;
+  }
+
+  /* Kept to one row so it never spills over the glass. */
+  .top-bar .volume-slider {
+    width: 4.5rem;
+  }
+
+  /* Compact board: one script pair, tighter type, so it costs about 60px of the
+     column instead of 110. */
+  .led-hindi {
+    display: none;
+  }
+
+  .led-row {
+    gap: 0.9rem;
+    padding: 0 0.6rem 0.4rem;
+  }
+
+  .led-script {
+    font-size: 0.95rem;
+  }
+
+  .led-latin {
+    font-size: 1.15rem;
+  }
+
+  /* :nth-of-type counts tags, not classes, so these need a real class. */
+  .chip-secondary {
+    display: none;
+  }
+
+  /* Directly under the photograph, not over the glass: on a phone the window is
+     too small to give any of it away. Anchored to the plate rather than to the
+     bottom, which is what previously landed it behind the deck. */
+  .led-mount {
+    left: 0.6rem;
+    right: 0.6rem;
+    translate: none;
+    width: auto;
+    top: calc(var(--plate-bottom) + 0.5rem);
+    bottom: auto;
+  }
+
+  .deck-mount {
+    left: 0.6rem;
+    right: 0.6rem;
+    width: auto;
+    bottom: 3.4rem;
+  }
+
+  .player-deck {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.55rem;
+  }
+
+  .deck-bay {
+    flex: 1 1 100%;
+    align-items: center;
+  }
+
+  .player-screen {
+    /* Width-driven here, with the 200px floor still winning on narrow screens
+       so the player never drops below what YouTube's terms allow. */
+    height: auto;
+    width: min(100%, 30rem);
+    min-height: 200px;
+  }
+
+  .deck-info {
+    flex: 1 1 60%;
+  }
+
+  .deck-knob {
+    width: auto;
+    flex: 0 0 4.5rem;
+    border-left: none;
+    padding-left: 0;
+  }
+
+  .bar-mount {
+    padding: 0 0.6rem 0.5rem;
+  }
+
+  /* Too many chips for a phone's width, so the row scrolls instead of wrapping
+     into a stack that would push the deck off screen. */
+  .bottom-bar {
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 0.15rem;
+  }
+
+  .bottom-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .bottom-bar > * {
+    flex: none;
+  }
+
+  .share-key {
+    margin-left: 0;
   }
 }

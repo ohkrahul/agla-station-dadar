@@ -72,16 +72,29 @@ for (const vp of VIEWPORTS) {
     const doc = document.documentElement;
     const frame = document.querySelector("iframe");
     const r = frame?.getBoundingClientRect();
+    /*
+     * A control sitting outside the viewport is only a bug if nothing can bring
+     * it back. Inside a deliberately scrollable row it is reachable, so the
+     * horizontal test is skipped there — otherwise the scrolling bottom bar
+     * reports every off-screen chip as broken.
+     */
+    const scrollableX = (el) => {
+      for (let p = el.parentElement; p; p = p.parentElement) {
+        const ox = getComputedStyle(p).overflowX;
+        if ((ox === "auto" || ox === "scroll") && p.scrollWidth > p.clientWidth + 1) {
+          return true;
+        }
+      }
+      return false;
+    };
+
     const clipped = [...document.querySelectorAll("button, input, iframe")]
       .filter((el) => {
         const b = el.getBoundingClientRect();
         if (b.width === 0 && b.height === 0) return false;
-        return (
-          b.bottom > window.innerHeight + 1 ||
-          b.top < -1 ||
-          b.right > window.innerWidth + 1 ||
-          b.left < -1
-        );
+        const vertical = b.bottom > window.innerHeight + 1 || b.top < -1;
+        const horizontal = b.right > window.innerWidth + 1 || b.left < -1;
+        return vertical || (horizontal && !scrollableX(el));
       })
       .map((el) => {
         const name =
@@ -120,26 +133,31 @@ for (const vp of VIEWPORTS) {
   // One pass per mood on the widest viewport only — the moods differ in colour
   // and media, not in layout.
   if (vp.name.startsWith("desktop")) {
-    for (const label of ["Shaam Ki Local", "Last Local"]) {
-      await page.getByRole("radio", { name: new RegExp(label, "i") }).click();
+    // The mood control is a cycling chip on the bottom bar, so each click
+    // advances Monsoon -> Shaam Ki Local -> Last Local.
+    const weather = page.getByRole("button", { name: /^weather:/i });
+    for (const name of ["shaam", "last"]) {
+      await weather.click();
       // Long enough for the 1s crossfade and the wash transition to finish.
-      await page.waitForTimeout(1400);
-      await page.screenshot({
-        path: path.join(outDir, `mood-${label.split(" ")[0].toLowerCase()}.png`),
-      });
+      await page.waitForTimeout(1500);
+      await page.screenshot({ path: path.join(outDir, `mood-${name}.png`) });
     }
-
-    await page.getByRole("radio", { name: /monsoon/i }).click();
-    await page.waitForTimeout(1200);
+    await weather.click(); // back to Monsoon
+    await page.waitForTimeout(1300);
 
     // Focus mode: the chrome must go and the player must stay (§7.3).
-    await page.getByRole("button", { name: /^focus$/i }).click();
-    await page.waitForTimeout(700);
+    const focusChip = page.getByRole("button", { name: /^focus mode:/i });
+    await focusChip.click();
+    await page.waitForTimeout(800);
     await page.screenshot({ path: path.join(outDir, "focus.png") });
     const playerStillThere = await page.locator("iframe").isVisible();
-    console.log(`  focus mode: player visible = ${playerStillThere}`);
-    await page.getByRole("button", { name: /show controls/i }).click();
-    await page.waitForTimeout(600);
+    const railGone = await page
+      .locator(".chrome-layer.is-hidden")
+      .count()
+      .then((n) => n > 0);
+    console.log(`  focus mode: player visible = ${playerStillThere}, chrome hidden = ${railGone}`);
+    await focusChip.click();
+    await page.waitForTimeout(700);
 
     /*
      * The arrival board only exists for a few seconds per station, so a normal

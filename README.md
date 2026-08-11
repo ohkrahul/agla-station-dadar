@@ -87,6 +87,25 @@ transform-animate every control and the iframe forever.
 as percentages of the carriage photograph, measured off the generated master. Regenerate
 the master and those four numbers are the only thing to re-measure.
 
+**Panels are positioned around the photograph, not on a grid.** The window sits where the
+generated carriage puts it — roughly 23–76% across and 11–68% down — so the route rail goes
+left of it, the wall props right of it, and the deck and bar below. Those are the areas of
+carriage the photo leaves free. Moving a panel means checking it still clears the glass.
+
+**Portrait drops the route rail, the wall props and the journey-mode panel.** A phone has no
+room for a sidebar and a wall of stickers, and pretending otherwise is what pushed the
+transport keys off the bottom of the screen. The indicator also loses its third script,
+which for most Mumbai names is identical to the Marathi anyway.
+
+**Portrait overrides live at the end of the stylesheet.** They have to: several of the
+panels they hide declare `display` in their own rule, so an earlier `display: none` loses
+on source order rather than specificity.
+
+**`scripts/shot.mjs` is the layout test.** The scene is `overflow: hidden`, so anything
+that does not fit is silently clipped rather than scrolled — a scrollbar check would report
+nothing. It measures the player against the 200×200 floor and flags any control outside the
+viewport, ignoring ones inside a deliberately scrollable row.
+
 ## Credits
 
 Ambience sources and licences: [`public/agla-station/audio/CREDITS.md`](public/agla-station/audio/CREDITS.md).

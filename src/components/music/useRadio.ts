@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { playable, type Song } from "@/data/songs";
+import { playable, type Song, type SongBucket } from "@/data/songs";
 import { YT_STATE, loadIframeApi, playerVars, type YTPlayer } from "@/lib/youtube";
 
 export type RadioStatus = "off" | "loading" | "playing" | "paused" | "unavailable";
@@ -13,7 +13,14 @@ export type RadioStatus = "off" | "loading" | "playing" | "paused" | "unavailabl
  * The player is not created until the listener boards, so no iframe loads and no
  * autoplay is attempted before a real user gesture.
  */
-export function useRadio({ boarded }: { boarded: boolean }) {
+export function useRadio({
+  boarded,
+  bucket,
+}: {
+  boarded: boolean;
+  /** null means the whole playlist. */
+  bucket: SongBucket | null;
+}) {
   const mountRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<YTPlayer | null>(null);
   /** Read inside YouTube's callbacks, which close over their creation scope. */
@@ -26,14 +33,29 @@ export function useRadio({ boarded }: { boarded: boolean }) {
   /** Songs YouTube refused. Kept so skipping cannot loop over them forever. */
   const deadRef = useRef<Set<string>>(new Set());
 
-  const current: Song | undefined = playable[index];
+  /**
+   * The active list. A bucket with nothing in it would strand the player, so an
+   * empty filter falls back to everything rather than showing a dead deck.
+   */
+  const list = useMemo(() => {
+    if (!bucket) return playable;
+    const filtered = playable.filter((s) => s.buckets.includes(bucket));
+    return filtered.length ? filtered : playable;
+  }, [bucket]);
+
+  /** Read inside YouTube's callbacks, which close over their creation scope. */
+  const listRef = useRef(list);
+  listRef.current = list;
+
+  const current: Song | undefined = list[Math.min(index, list.length - 1)];
 
   const goTo = useCallback((next: number) => {
-    if (playable.length === 0) return;
-    const wrapped = ((next % playable.length) + playable.length) % playable.length;
+    const l = listRef.current;
+    if (l.length === 0) return;
+    const wrapped = ((next % l.length) + l.length) % l.length;
     indexRef.current = wrapped;
     setIndex(wrapped);
-    playerRef.current?.loadVideoById(playable[wrapped].youtubeId);
+    playerRef.current?.loadVideoById(l[wrapped].youtubeId);
   }, []);
 
   /**
@@ -41,10 +63,11 @@ export function useRadio({ boarded }: { boarded: boolean }) {
    * is refused, stop rather than spin — and say so plainly.
    */
   const skipBroken = useCallback(() => {
-    const failed = playable[indexRef.current];
+    const l = listRef.current;
+    const failed = l[indexRef.current];
     if (failed) deadRef.current.add(failed.youtubeId);
 
-    if (deadRef.current.size >= playable.length) {
+    if (l.every((s) => deadRef.current.has(s.youtubeId))) {
       setStatus("unavailable");
       setNote("No songs are playable here. They may be blocked in this region.");
       return;
@@ -52,8 +75,8 @@ export function useRadio({ boarded }: { boarded: boolean }) {
 
     let next = indexRef.current;
     do {
-      next = (next + 1) % playable.length;
-    } while (deadRef.current.has(playable[next].youtubeId));
+      next = (next + 1) % l.length;
+    } while (deadRef.current.has(l[next].youtubeId));
 
     setNote(`${failed?.title ?? "That track"} cannot be embedded — skipping.`);
     goTo(next);
@@ -62,7 +85,7 @@ export function useRadio({ boarded }: { boarded: boolean }) {
   // Create the player once, on boarding.
   useEffect(() => {
     if (!boarded || playerRef.current || !mountRef.current) return;
-    if (playable.length === 0) {
+    if (list.length === 0) {
       setStatus("unavailable");
       setNote("No songs curated yet.");
       return;
@@ -75,7 +98,7 @@ export function useRadio({ boarded }: { boarded: boolean }) {
       .then((YT) => {
         if (cancelled || !mountRef.current) return;
         playerRef.current = new YT.Player(mountRef.current, {
-          videoId: playable[indexRef.current].youtubeId,
+          videoId: listRef.current[indexRef.current].youtubeId,
           width: "100%",
           height: "100%",
           playerVars: playerVars(),
@@ -110,6 +133,17 @@ export function useRadio({ boarded }: { boarded: boolean }) {
 
   useEffect(() => () => playerRef.current?.destroy(), []);
 
+  /**
+   * Changing the filter starts that shelf from the top, but only once the deck
+   * exists — otherwise it would fight the initial cue on boarding.
+   */
+  useEffect(() => {
+    if (!playerRef.current) return;
+    indexRef.current = 0;
+    setIndex(0);
+    playerRef.current.loadVideoById(list[0].youtubeId);
+  }, [list]);
+
   const play = useCallback(() => playerRef.current?.playVideo(), []);
   const pause = useCallback(() => playerRef.current?.pauseVideo(), []);
   const next = useCallback(() => goTo(indexRef.current + 1), [goTo]);
@@ -134,7 +168,7 @@ export function useRadio({ boarded }: { boarded: boolean }) {
     mountRef,
     current,
     index,
-    total: playable.length,
+    total: list.length,
     status,
     note,
     volume,
