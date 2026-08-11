@@ -81,6 +81,28 @@ body {
   overscroll-behavior: none;
 }
 
+/*
+ * Fluid root size, landscape only.
+ *
+ * Nearly everything in the chrome is expressed in rem — type, padding, panel
+ * widths, --deck-h, the mount offsets — so scaling the root scales the whole
+ * composition together. A small window then looks like a smaller version of a
+ * large one rather than like a large one with the furniture removed.
+ *
+ * 16px lands at 1440x900. The floor is 13px, not proportional: true proportion
+ * at 1270x664 works out near 11.8px, which would put .chip-label at under 7px.
+ * Past that point the right move is dropping elements, not shrinking type into
+ * illegibility — see the responsive overrides at the end of this file.
+ *
+ * Portrait keeps 16px. Its scarce axis is width, so a vw-derived size collapses
+ * to about 4px on a phone, and that layout is tuned already.
+ */
+@media (orientation: landscape) {
+  html {
+    font-size: clamp(13px, min(1.111vw, 1.778vh), 17px);
+  }
+}
+
 body {
   margin: 0;
   background: var(--color-ink);
@@ -217,7 +239,9 @@ body {
 
 .chip-label {
   font-family: var(--font-signage);
-  font-size: 0.58rem;
+  /* Floored: this is the smallest type in the interface, and the fluid root
+     would otherwise take it under 7px on a small window. */
+  font-size: max(9px, 0.58rem);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: rgb(226 216 193 / 0.5);
@@ -226,7 +250,7 @@ body {
 
 .chip-value {
   font-family: var(--font-signage);
-  font-size: 0.82rem;
+  font-size: max(11px, 0.82rem);
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--color-cream-lit);
@@ -758,7 +782,7 @@ body {
 .t-label {
   font-family: var(--font-signage);
   font-weight: 500;
-  font-size: 0.6875rem;
+  font-size: max(9.5px, 0.6875rem);
   text-transform: uppercase;
   letter-spacing: 0.18em;
 }
@@ -780,7 +804,7 @@ body {
 /* Printed on paper, not painted on metal. Ticket readouts only. */
 .t-ticket {
   font-family: var(--font-ticket);
-  font-size: 0.6875rem;
+  font-size: max(9.5px, 0.6875rem);
   letter-spacing: 0.06em;
   font-variant-numeric: tabular-nums;
 }
@@ -1351,11 +1375,18 @@ body {
     --deck-h: 4.25rem;
   }
 
-  .deck-art,
+  /* Cover art and the artist credit stay, now that the fluid root has made room
+     for them: a small window should look like a smaller version of a large one,
+     not like one with the furniture removed. Only the two rows that repeat
+     information available elsewhere go. */
   .deck-meta,
-  .deck-artist,
   .deck-shelf {
     display: none;
+  }
+
+  .deck-art {
+    width: 3.6rem;
+    height: 3.6rem;
   }
 
   .player-deck {
@@ -1363,19 +1394,8 @@ body {
     padding: 0.35rem 0.5rem;
   }
 
-  .deck-info {
-    flex-direction: row;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  .deck-title {
-    flex: 1;
-    min-width: 0;
-  }
-
   .deck-transport {
-    margin-top: 0;
+    margin-top: 0.35rem;
   }
 
   .deck-knob {

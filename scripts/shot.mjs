@@ -18,9 +18,12 @@ ensureDir(outDir);
 const VIEWPORTS = [
   { name: "desktop-1440x900", width: 1440, height: 900 },
   { name: "laptop-1280x720", width: 1280, height: 720 },
+  { name: "wide-1920x1080", width: 1920, height: 1080 },
   // A small laptop with browser chrome eating the height — the case where panels
   // started scrolling and the share key was cut off.
   { name: "small-1366x610", width: 1366, height: 610 },
+  // What 150% browser zoom on a 1905x996 window actually produces in CSS pixels.
+  { name: "zoom150-1270x664", width: 1270, height: 664 },
   { name: "phone-390x844", width: 390, height: 844 },
 ];
 
