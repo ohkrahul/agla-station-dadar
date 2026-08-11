@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A second push should supersede the first rather than queue behind it.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Deployment is handled by Vercel's own Git integration, so this is purely a
+  # check. It needs no secrets, which means pull requests and forks get verified
+  # too. Note the consequence: a failing check here does NOT block the deploy —
+  # Vercel builds from the same push independently. To gate releases on a green
+  # check, deploy from a workflow with the Vercel CLI instead and set
+  # git.deploymentEnabled.main to false in vercel.json.
+  verify:
+    name: Typecheck and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      # No API key needed: all media is committed and generation is dev-only.
+      - name: Build
+        run: npm run build

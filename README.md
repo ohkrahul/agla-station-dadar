@@ -45,28 +45,19 @@ Raw model output is kept in `scripts/.raw/` (gitignored) so no paid generation i
 
 ## Deploying
 
-`.github/workflows/deploy.yml` runs on every push to `main`:
+Push to `main`. Vercel's Git integration builds and deploys it —
+[agla-station-dadar.vercel.app](https://agla-station-dadar.vercel.app).
 
-1. **verify** — `npm ci`, `tsc --noEmit`, `next build`. Also runs on pull requests, and
-   needs no secrets, so a PR is checked even when it cannot deploy.
-2. **deploy** — `vercel pull` → `vercel build --prod` → `vercel deploy --prebuilt --prod`.
-   Only on a push to `main`, and only if verify passed.
+`.github/workflows/ci.yml` runs `tsc --noEmit` and `next build` on every push and pull
+request. It needs no secrets, so forks and PRs are checked too.
 
-Building in CI rather than on Vercel means a broken build fails the check instead of
-failing the deployment.
-
-Three repository secrets are required (Settings → Secrets and variables → Actions):
-
-| Secret | Where to get it |
-|---|---|
-| `VERCEL_TOKEN` | Vercel → Account Settings → Tokens |
-| `VERCEL_ORG_ID` | `vercel link`, then read `.vercel/project.json` (`orgId`) |
-| `VERCEL_PROJECT_ID` | same file (`projectId`) |
-
-`vercel.json` sets `git.deploymentEnabled.main` to `false`. **This is load-bearing.**
-Vercel's Git integration deploys on push by itself, so without it every push would deploy
-twice — once from the integration and once from the workflow — and the two would race to
-production. The setting only affects Git-triggered deploys; CLI deploys still work.
+The check and the deploy are **independent**: Vercel builds from the same push regardless
+of whether CI passes, so a red check does not block a release. That is a deliberate
+trade for having no tokens to manage. To gate deploys on a green check instead, deploy
+from the workflow with the Vercel CLI (`vercel pull` → `vercel build --prod` →
+`vercel deploy --prebuilt --prod`), add `VERCEL_TOKEN`, `VERCEL_ORG_ID` and
+`VERCEL_PROJECT_ID` as repository secrets, and set `git.deploymentEnabled.main` to
+`false` in a `vercel.json` so the integration stops deploying in parallel.
 
 No API key is needed to build or deploy. All media is committed and generation is a
 development-only step.
