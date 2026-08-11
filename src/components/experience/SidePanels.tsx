@@ -2,29 +2,33 @@
 
 import { moodOrder, moods, type MoodId } from "@/data/moods";
 import { bucketLabels, type SongBucket } from "@/data/songs";
-import type { Seat } from "./useJourney";
 import type { FanSpeed } from "./TrainExperience";
 
 /**
  * The controls, as a rail down the right-hand wall under the fan — the mirror of
- * the route rail on the left. Reading top to bottom like the route does, rather
- * than as a strip of chips along the bottom.
+ * the route panel on the left.
  *
- * Every entry is a real control, not a badge.
+ * Four controls and a share key, and no more: the rail has to fit the wall
+ * without scrolling on a short laptop, and everything here does visibly what its
+ * label says.
+ *
+ * Deliberately NOT here:
+ *  - "Announcements", which only ever gated a door chime. There is no recorded
+ *    announcement to toggle, so the label promised something that did not exist.
+ *    The chime still plays on arrival.
+ *  - "Journey mode: window / door side". v3 dropped the door-view plate, so it
+ *    only changed vibration and scroll speed — real, but not what "door side"
+ *    implies. Worth restoring if a door plate is ever generated.
  */
 export function ControlRail({
   moodId,
   onMood,
   bucket,
   onCycleBucket,
-  announcements,
-  onAnnouncements,
   focus,
   onFocus,
   fanSpeed,
   onFan,
-  seat,
-  onSeat,
   onShare,
   shareNote,
 }: {
@@ -32,14 +36,10 @@ export function ControlRail({
   onMood: (m: MoodId) => void;
   bucket: SongBucket | null;
   onCycleBucket: () => void;
-  announcements: boolean;
-  onAnnouncements: (v: boolean) => void;
   focus: boolean;
   onFocus: (v: boolean) => void;
   fanSpeed: FanSpeed;
   onFan: (v: FanSpeed) => void;
-  seat: Seat;
-  onSeat: (s: Seat) => void;
   onShare: () => void;
   shareNote: string | null;
 }) {
@@ -77,53 +77,12 @@ export function ControlRail({
       />
 
       <RailButton
-        label="Announcements"
-        value={announcements ? "On" : "Off"}
-        glyph="🔉"
-        onClick={() => onAnnouncements(!announcements)}
-        pressed={announcements}
-      />
-
-      <RailButton
         label="Focus mode"
         value={focus ? "Scenery only" : "Just travel"}
         glyph={focus ? "◉" : "◎"}
         onClick={() => onFocus(!focus)}
         pressed={focus}
       />
-
-      {/*
-        Where you are sitting.
-        v3 dropped the door-view video, so this is not a different plate — it
-        changes how the same plate is framed and how hard it moves: a door seat
-        sits nearer the opening, so the view is faster and shakier. Honest about
-        what it is rather than promising footage that does not exist.
-      */}
-      <fieldset className="journey-mode mt-2 border-t border-gold/15 pt-2">
-        <legend className="sr-only">Journey mode</legend>
-        <p className="chip-label mb-1">Journey mode</p>
-        <div className="flex gap-1">
-          {(
-            [
-              { id: "window", label: "Window", glyph: "▤" },
-              { id: "door", label: "Door", glyph: "▥" },
-            ] as const
-          ).map((o) => (
-            <button
-              key={o.id}
-              type="button"
-              role="radio"
-              aria-checked={seat === o.id}
-              onClick={() => onSeat(o.id)}
-              className="mode-key flex-1 justify-center"
-              data-on={seat === o.id}
-            >
-              <span aria-hidden>{o.glyph}</span>
-              {o.label}
-            </button>
-          ))}
-        </div>
-      </fieldset>
 
       <button type="button" onClick={onShare} className="share-key mt-2 w-full justify-center">
         <span aria-hidden>⤴</span> {shareNote ?? "Share journey"}

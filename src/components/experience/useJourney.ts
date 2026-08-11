@@ -12,9 +12,6 @@ import { DWELL_SECONDS, TRAVEL_SECONDS, stations } from "@/data/stations";
  */
 export type Phase = "traveling" | "arriving" | "stopped" | "departing";
 
-/** Where the listener is sitting. Changes framing and motion, not the plate. */
-export type Seat = "window" | "door";
-
 const MS: Record<Phase, number> = {
   traveling: TRAVEL_SECONDS * 1000,
   arriving: 4000,

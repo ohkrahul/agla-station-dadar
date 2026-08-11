@@ -14,7 +14,7 @@ import { RouteRail } from "./RouteRail";
 import { TopBar } from "./TopBar";
 import { CarriageProps } from "./CarriageProps";
 import { ControlRail } from "./SidePanels";
-import { useJourney, type Seat } from "./useJourney";
+import { useJourney } from "./useJourney";
 import { PlayerDeck, HiddenPlayer } from "@/components/music/PlayerDeck";
 import { useRadio } from "@/components/music/useRadio";
 import { useAmbience } from "@/components/ambience/useAmbience";
@@ -35,8 +35,6 @@ export function TrainExperience() {
   const [boarded, setBoarded] = useState(false);
   const [focus, setFocus] = useState(false);
   const [fanSpeed, setFanSpeed] = useState<FanSpeed>("normal");
-  const [seat, setSeat] = useState<Seat>("window");
-  const [announcements, setAnnouncements] = useState(true);
   const [bucketIndex, setBucketIndex] = useState(0);
   const [shareNote, setShareNote] = useState<string | null>(null);
 
@@ -48,14 +46,13 @@ export function TrainExperience() {
     boarded,
     phase: journey.phase,
     raining: mood.rain,
-    announcements,
   });
 
-  // Music ducks under the station announcement rather than pausing (§9).
+  // Music ducks under the door cue at a stop rather than pausing (§9).
   const { duck } = radio;
   useEffect(() => {
-    duck(journey.atStation && announcements);
-  }, [duck, journey.atStation, announcements]);
+    duck(journey.atStation);
+  }, [duck, journey.atStation]);
 
   const share = useCallback(async () => {
     const text = `AGLA STATION — ${LINE_NAME}, heading for ${terminus.english}. At ${
@@ -71,8 +68,7 @@ export function TrainExperience() {
     setTimeout(() => setShareNote(null), 2200);
   }, [journey.station.english, mood.label, radio.current]);
 
-  // A door seat sits nearer the opening: wider view, harder ride.
-  const shake = journey.moving ? (seat === "door" ? "2px" : "1px") : "0px";
+  const shake = journey.moving ? "1px" : "0px";
 
   return (
     <main
@@ -109,10 +105,9 @@ export function TrainExperience() {
 
           <TrainWindow
             moodId={moodId}
-            speed={journey.speed * (seat === "door" ? 1.35 : 1)}
+            speed={journey.speed}
             station={journey.station}
             boardVisible={journey.boardVisible}
-            seat={seat}
           />
           <FanBlur speed={fanSpeed} />
           <Handles moving={journey.moving} />
@@ -160,14 +155,10 @@ export function TrainExperience() {
             onMood={setMoodId}
             bucket={bucket}
             onCycleBucket={() => setBucketIndex((i) => (i + 1) % BUCKETS.length)}
-            announcements={announcements}
-            onAnnouncements={setAnnouncements}
             focus={focus}
             onFocus={setFocus}
             fanSpeed={fanSpeed}
             onFan={setFanSpeed}
-            seat={seat}
-            onSeat={setSeat}
             onShare={share}
             shareNote={shareNote}
           />
@@ -210,19 +201,15 @@ function TrainWindow({
   speed,
   station,
   boardVisible,
-  seat,
 }: {
   moodId: MoodId;
   speed: number;
   station: Station;
   boardVisible: boolean;
-  seat: Seat;
 }) {
   return (
     <div
-      className={`window-box ${speed === 0 ? "is-halted" : ""} ${
-        seat === "door" ? "is-door" : ""
-      }`}
+      className={`window-box ${speed === 0 ? "is-halted" : ""}`}
       style={{
         ...rectToStyle(WINDOW_RECT),
         boxShadow:

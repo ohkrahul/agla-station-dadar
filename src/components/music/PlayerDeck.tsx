@@ -50,34 +50,41 @@ export function PlayerDeck({ radio }: { radio: Radio }) {
       </div>
 
       <div className="deck-info">
-        <div className="flex items-baseline justify-between gap-3">
+        {/* Classed rather than inlined so the short-viewport rules can drop the
+            secondary rows: on a 610px-tall window there is only room for the
+            title and the transport. */}
+        <div className="deck-meta flex items-baseline justify-between gap-3">
           <p className="chip-label">Now playing</p>
           <p className="t-ticket text-[0.6rem] text-cream-lit/45">
             {String(index + 1).padStart(2, "0")}/{String(total).padStart(2, "0")}
           </p>
         </div>
 
-        <p className="truncate text-[1.05rem] leading-tight text-cream-lit">
+        <p className="deck-title truncate text-[1.05rem] leading-tight text-cream-lit">
           {current?.title ?? "—"}
         </p>
-        <p className="truncate text-[0.78rem] leading-snug text-cream-lit/60">
+        <p className="deck-artist truncate text-[0.78rem] leading-snug text-cream-lit/60">
           {current ? `${current.artist} • ${current.year}` : ""}
         </p>
 
         {/* Errors replace the shelf label, because both answer "what is on?". */}
         {note ? (
-          <p className="mt-0.5 truncate text-[0.7rem] text-gold" role="status" aria-live="polite">
+          <p
+            className="deck-shelf mt-0.5 truncate text-[0.7rem] text-gold"
+            role="status"
+            aria-live="polite"
+          >
             {note}
           </p>
         ) : (
           current && (
-            <p className="chip-label mt-0.5 truncate text-gold/70">
+            <p className="deck-shelf chip-label mt-0.5 truncate text-gold/70">
               {bucketLabels[current.buckets[0]]}
             </p>
           )
         )}
 
-        <div className="mt-1.5 flex items-center gap-2">
+        <div className="deck-transport mt-1.5 flex items-center gap-2">
           <DeckKey label="Previous song" onClick={radio.previous} disabled={disabled}>
             ⏮
           </DeckKey>

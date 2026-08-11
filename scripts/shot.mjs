@@ -18,6 +18,9 @@ ensureDir(outDir);
 const VIEWPORTS = [
   { name: "desktop-1440x900", width: 1440, height: 900 },
   { name: "laptop-1280x720", width: 1280, height: 720 },
+  // A small laptop with browser chrome eating the height — the case where panels
+  // started scrolling and the share key was cut off.
+  { name: "small-1366x610", width: 1366, height: 610 },
   { name: "phone-390x844", width: 390, height: 844 },
 ];
 
@@ -149,7 +152,21 @@ for (const vp of VIEWPORTS) {
       }
     }
 
+    /*
+     * Any panel that has to scroll is a layout failure here, not a feature: this
+     * is a fixed scene, and a scrollbar inside a carriage fitting looks like a
+     * bug. The bottom bar's deliberate horizontal strip is long gone.
+     */
+    const scrollers = [...document.querySelectorAll("div, nav, section")]
+      .filter((el) => {
+        const s = getComputedStyle(el);
+        const canY = s.overflowY === "auto" || s.overflowY === "scroll";
+        return canY && el.scrollHeight > el.clientHeight + 2;
+      })
+      .map((el) => `${el.className.toString().split(" ")[0] || el.tagName} +${el.scrollHeight - el.clientHeight}px`);
+
     return {
+      scrollers: [...new Set(scrollers)],
       overflowX: doc.scrollWidth - doc.clientWidth,
       overflowY: doc.scrollHeight - doc.clientHeight,
       player: r ? { w: Math.round(r.width), h: Math.round(r.height), seen } : null,
@@ -187,6 +204,7 @@ for (const vp of VIEWPORTS) {
       `  ${playing ? "playing" : "NOT PLAYING"}` +
       (audit.clipped.length ? `  CLIPPED: ${audit.clipped.join(", ")}` : "") +
       (audit.covering.length ? `  ON THE GLASS: ${audit.covering.join(", ")}` : "") +
+      (audit.scrollers.length ? `  SCROLLING: ${audit.scrollers.join(", ")}` : "") +
       (unexpected.length ? `  BROKEN: ${unexpected.join(", ")}` : "") +
       (pendingAudio.length ? `  (awaiting audio: ${pendingAudio.length} files)` : "") +
       (errors.length ? `  errors: ${errors.slice(0, 2).join(" | ")}` : "")

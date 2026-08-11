@@ -293,12 +293,12 @@ body {
   padding-block: 0.15rem;
 }
 
+/* Sized to content now that it names one station rather than ten, so it needs
+   no height cap and cannot scroll. */
 .rail-mount {
   position: absolute;
   left: 0.9rem;
-  /* Below the top bar, and never taller than the space above the console. */
   top: 7.5rem;
-  max-height: calc(100dvh - var(--deck-h) - 9.5rem);
   width: min(13.5rem, 21vw);
   display: flex;
 }
@@ -333,19 +333,6 @@ body {
   width: min(30rem, 46vw);
 }
 
-/* Short landscape windows leave barely enough wall below the glass, so the band
-   sits closer to the edge rather than climbing onto the window. */
-@media (orientation: landscape) and (max-height: 780px) {
-  .console-mount {
-    bottom: 0.3rem;
-    inset-inline: 0.5rem;
-  }
-
-  .player-deck {
-    padding: 0.45rem;
-  }
-}
-
 .console-mount::before {
   content: "";
   position: absolute;
@@ -374,13 +361,13 @@ body {
   align-items: center;
 }
 
+/* No overflow rule on purpose. If this ever needs to scroll, something has to
+   come out of it — a scrollbar inside a carriage fitting reads as a bug. */
 .control-rail {
   display: flex;
   width: 100%;
-  max-height: 100%;
   flex-direction: column;
   padding: 0.7rem 0.75rem;
-  overflow-y: auto;
 }
 
 .rail-chip {
@@ -521,49 +508,20 @@ body {
 }
 
 /* --------------------------------------------------------------------------
-   Journey mode and bottom bar controls
+   Share key, and the skip-ahead links in the route panel
    -------------------------------------------------------------------------- */
 
-/* Inside the control rail, so it inherits the rail's width. */
-.journey-mode {
-  min-width: 0;
-}
-
-.mode-key {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
-  padding: 0.42rem 0.55rem;
-  border-radius: 3px;
+/* "Then Charni Road · Grant Road" — small, but still real controls. */
+.rail-then {
   font-family: var(--font-signage);
-  font-size: 0.74rem;
-  letter-spacing: 0.09em;
+  font-size: 0.72rem;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: rgb(226 216 193 / 0.66);
-  background: rgb(255 255 255 / 0.04);
-  transition: background 160ms ease, color 160ms ease;
+  color: rgb(226 216 193 / 0.55);
+  transition: color 160ms ease;
 }
 
-.mode-key:hover {
-  background: rgb(255 255 255 / 0.09);
-}
-
-.mode-key[data-on="true"] {
-  color: var(--color-ink);
-  background-image: linear-gradient(180deg, var(--color-gold), var(--color-gold-dim));
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3);
-}
-
-.bar-chip {
-  transition: border-color 160ms ease, background 160ms ease;
-}
-
-.bar-chip:hover {
-  border-color: rgb(240 180 41 / 0.4);
-}
-
-.bar-chip[aria-pressed="true"] .chip-value {
+.rail-then:hover {
   color: var(--color-gold);
 }
 
@@ -609,13 +567,6 @@ body {
   gap: 0.6rem;
   width: min(13.5rem, 21vw);
   pointer-events: none;
-}
-
-/* Hidden rather than clipped when the wall runs short. */
-@media (orientation: landscape) and (max-height: 820px) {
-  .carriage-props {
-    display: none;
-  }
 }
 
 .prop-plaque,
@@ -1328,16 +1279,10 @@ body {
     padding: 0.5rem;
   }
 
-  /* The heading, journey mode and the share key run the grid's full width. */
+  /* The heading and the share key run the grid's full width. */
   .control-rail > p,
-  .control-rail > .journey-mode,
   .control-rail > .share-key {
     grid-column: 1 / -1;
-  }
-
-  .journey-mode {
-    margin-top: 0.15rem;
-    padding-top: 0.35rem;
   }
 
   .rail-chip + .rail-chip {
@@ -1346,5 +1291,132 @@ body {
 
   .share-key {
     margin-left: 0;
+  }
+}
+
+/* ==========================================================================
+   RESPONSIVE OVERRIDES — MUST STAY LAST
+
+   These re-declare properties the base rules also set, so they win on source
+   order, not specificity. Moving any of them above the rules they override
+   silently stops them working: that is how the deck kept its full height on a
+   610px window and rode onto the glass. Ordered widest condition first.
+   ========================================================================== */
+
+/* Hidden rather than clipped when the wall runs short. */
+@media (orientation: landscape) and (max-height: 820px) {
+  .carriage-props {
+    display: none;
+  }
+}
+
+/*
+ * Short landscape windows.
+ *
+ * The wall below the glass shrinks with the viewport while the deck does not, so
+ * past a point the deck starts climbing onto the window. Everything below tightens
+ * the deck rather than moving it, because moving it is what covered the glass.
+ */
+@media (orientation: landscape) and (max-height: 780px) {
+  .console-mount {
+    bottom: 0.3rem;
+    inset-inline: 0.5rem;
+  }
+
+  .player-deck {
+    padding: 0.45rem;
+  }
+
+  .deck-art {
+    width: 5rem;
+    height: 5rem;
+  }
+
+  .rail-mount,
+  .control-mount {
+    top: 6.5rem;
+  }
+}
+
+/*
+ * Very short landscape. About 90px of wall is left below the glass, so the deck
+ * becomes a single strip: title, transport, volume. The cover art, the shelf
+ * label and the artist credit go — they are the parts you can read elsewhere or
+ * do without, whereas losing the transport would leave no way to change track.
+ */
+@media (orientation: landscape) and (max-height: 660px) {
+  :root {
+    --deck-h: 4.25rem;
+  }
+
+  .deck-art,
+  .deck-meta,
+  .deck-artist,
+  .deck-shelf {
+    display: none;
+  }
+
+  .player-deck {
+    align-items: center;
+    padding: 0.35rem 0.5rem;
+  }
+
+  .deck-info {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .deck-title {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .deck-transport {
+    margin-top: 0;
+  }
+
+  .deck-knob {
+    width: auto;
+    gap: 0;
+    border-left: none;
+    padding-left: 0.4rem;
+  }
+
+  .deck-knob .chip-label {
+    display: none;
+  }
+
+  /* The strip's height is whatever its tallest control is, so these three set
+     it. Trimmed together to keep the deck clear of the glass. */
+  .knob {
+    width: 34px;
+    height: 34px;
+  }
+
+  .deck-play {
+    width: 2.1rem;
+    height: 2.1rem;
+    font-size: 0.75rem;
+  }
+
+  .deck-key {
+    width: 1.75rem;
+    height: 1.75rem;
+    font-size: 0.7rem;
+  }
+
+  .rail-mount,
+  .control-mount {
+    top: 5.75rem;
+  }
+
+  .control-rail,
+  .route-rail {
+    padding: 0.5rem 0.6rem;
+  }
+
+  .rail-chip {
+    padding: 0.22rem 0.35rem;
   }
 }
