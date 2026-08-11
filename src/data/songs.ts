@@ -116,6 +116,52 @@ export const songs: Song[] = [
     youtubeId: "gkCKTuR-ECI", // T-Series
     buckets: ["last-local"],
   },
+  {
+    title: "Agar Tum Saath Ho",
+    artist: "Alka Yagnik, Arijit Singh",
+    year: 2015,
+    youtubeId: "FOA9iyxsW_A", // T-Series
+    buckets: ["last-local"],
+  },
+  {
+    title: "Channa Mereya",
+    artist: "Arijit Singh",
+    year: 2016,
+    youtubeId: "284Ov7ysmfA",
+    buckets: ["last-local"],
+  },
+
+  // ── Later additions, filed by era ───────────────────────────────────────
+  {
+    title: "Kuchh Na Kaho",
+    artist: "Kumar Sanu",
+    year: 1994,
+    youtubeId: "Kidtrrn4aUM", // Saregama
+    buckets: ["90s"],
+  },
+  {
+    title: "Yeh Kaali Kaali Aankhen",
+    artist: "Kumar Sanu, Anu Malik",
+    year: 1993,
+    // Ishtar Music, the label that owns Baazigar. The first candidate played but
+    // sat on a personal channel, which is the kind that quietly disappears.
+    youtubeId: "IhKXq5dhTag",
+    buckets: ["90s"],
+  },
+  {
+    title: "Kabhi Kabhi Aditi",
+    artist: "Rashid Ali",
+    year: 2008,
+    youtubeId: "HIbzXaBdwZw",
+    buckets: ["2000s"],
+  },
+  {
+    title: "Bheegi Bheegi",
+    artist: "James",
+    year: 2006,
+    youtubeId: "WeY9hdsmIaQ",
+    buckets: ["2000s", "monsoon"],
+  },
 ];
 
 /** Everything here is playable; kept as a named export so the player's contract

@@ -1472,21 +1472,42 @@ body {
  * label and the artist credit go — they are the parts you can read elsewhere or
  * do without, whereas losing the transport would leave no way to change track.
  */
-@media (orientation: landscape) and (max-height: 660px) {
+@media (orientation: landscape) and (max-height: 700px) {
   :root {
-    --deck-h: 4.25rem;
+    --deck-h: 7rem;
   }
 
-  /* Cover art and the artist credit stay, now that the fluid root has made room
-     for them: a small window should look like a smaller version of a large one,
-     not like one with the furniture removed. Only the two rows that repeat
-     information available elsewhere go. */
-  .deck-meta,
-  .deck-shelf,
-  /* The scrubber goes before the transport does: knowing how far through a track
-     you are matters less than being able to change it. */
+  /*
+   * The deck keeps every row at every size — art, now-playing, title, artist,
+   * shelf, scrubber, transport, knob. Short screens used to lose half of them,
+   * which left a small device with a worse instrument rather than a smaller one.
+   *
+   * The room comes from cropping the carriage ROOF instead: shifting the plate up
+   * takes height off the top of the photograph, which carries nothing but a
+   * luggage rail, and moves the glass up with it. It cannot go much further — the
+   * glass starts about 11% into the plate and the top bar must stay clear of it.
+   */
+  .plate {
+    /* -2.5rem gained more wall but pushed the glass into the top bar by up to
+       9px. This is the most that can come off the roof. */
+    top: -1.4rem;
+  }
+
+  .top-mount {
+    padding: 0.5rem 0.6rem 0;
+  }
+
+  .deck-title {
+    font-size: 0.92rem;
+  }
+
+  .deck-artist {
+    font-size: 0.7rem;
+  }
+
   .deck-progress {
-    display: none;
+    margin-top: 0.2rem;
+    margin-bottom: 0.15rem;
   }
 
   .deck-art {
@@ -1496,22 +1517,19 @@ body {
 
   .player-deck {
     align-items: center;
-    padding: 0.35rem 0.5rem;
+    padding: 0.3rem 0.45rem;
+    gap: 0.55rem;
   }
 
   .deck-transport {
-    margin-top: 0.35rem;
+    margin-top: 0.15rem;
   }
 
   .deck-knob {
     width: auto;
-    gap: 0;
+    gap: 0.1rem;
     border-left: none;
     padding-left: 0.4rem;
-  }
-
-  .deck-knob .chip-label {
-    display: none;
   }
 
   /* The strip's height is whatever its tallest control is, so these three set
