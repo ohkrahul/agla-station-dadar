@@ -7,21 +7,21 @@ import { Knob } from "./Knob";
 type Radio = ReturnType<typeof useRadio>;
 
 /**
- * The deck: cover art, what is playing, transport, volume.
+ * The deck: cover art, what is playing, progress, transport, volume.
  *
  * The YouTube player itself is NOT here — it is mounted hidden by
  * <HiddenPlayer/> and this shows the video's thumbnail in its place. That is a
- * deliberate choice by the project owner, and it is worth being clear about the
- * trade in code as well as in conversation: YouTube's Required Minimum
- * Functionality expects an embedded player to stay visible, so a hidden one can
- * have embedding revoked for the domain. If playback ever starts failing across
- * every track at once, this is the first thing to suspect — make the mount
- * visible again and the deck falls back to a compliant 200x200 player.
+ * deliberate choice by the project owner, and worth being clear about in code as
+ * well as in conversation: Required Minimum Functionality expects an embedded
+ * player to stay visible, so a hidden one can have embedding revoked for the
+ * domain. If playback starts failing across every track at once, that is the
+ * cause — removing .player-hidden restores a compliant 200x200 player.
  */
 export function PlayerDeck({ radio }: { radio: Radio }) {
-  const { current, status, note, index, total } = radio;
+  const { current, status, note, index, total, position } = radio;
   const isPlaying = status === "playing";
   const disabled = status === "off" || status === "unavailable";
+  const progress = position.of > 0 ? position.at / position.of : 0;
 
   return (
     <section className="player-deck panel" aria-label="Radio">
@@ -50,9 +50,6 @@ export function PlayerDeck({ radio }: { radio: Radio }) {
       </div>
 
       <div className="deck-info">
-        {/* Classed rather than inlined so the short-viewport rules can drop the
-            secondary rows: on a 610px-tall window there is only room for the
-            title and the transport. */}
         <div className="deck-meta flex items-baseline justify-between gap-3">
           <p className="chip-label">Now playing</p>
           <p className="t-ticket text-[0.6rem] text-cream-lit/45">
@@ -84,9 +81,16 @@ export function PlayerDeck({ radio }: { radio: Radio }) {
           )
         )}
 
-        <div className="deck-transport mt-1.5 flex items-center gap-2">
+        <Progress
+          at={position.at}
+          of={position.of}
+          onSeek={radio.seek}
+          disabled={disabled || position.of === 0}
+        />
+
+        <div className="deck-transport flex items-center gap-2">
           <DeckKey label="Previous song" onClick={radio.previous} disabled={disabled}>
-            ⏮
+            <SkipIcon back />
           </DeckKey>
           <button
             type="button"
@@ -95,10 +99,10 @@ export function PlayerDeck({ radio }: { radio: Radio }) {
             aria-label={isPlaying ? "Pause" : "Play"}
             className="deck-play"
           >
-            <span aria-hidden>{isPlaying ? "▮▮" : "▶"}</span>
+            {isPlaying ? <PauseIcon /> : <PlayIcon />}
           </button>
           <DeckKey label="Next song" onClick={radio.next} disabled={disabled}>
-            ⏭
+            <SkipIcon />
           </DeckKey>
         </div>
       </div>
@@ -114,6 +118,52 @@ export function PlayerDeck({ radio }: { radio: Radio }) {
       </div>
     </section>
   );
+}
+
+/**
+ * Elapsed position, and a real scrubber.
+ *
+ * A range input rather than a styled div: dragging, arrow keys and a screen
+ * reader all work without reimplementing any of it.
+ */
+function Progress({
+  at,
+  of,
+  onSeek,
+  disabled,
+}: {
+  at: number;
+  of: number;
+  onSeek: (fraction: number) => void;
+  disabled?: boolean;
+}) {
+  const pct = of > 0 ? (at / of) * 100 : 0;
+
+  return (
+    <div className="deck-progress">
+      <input
+        type="range"
+        min={0}
+        max={1000}
+        value={Math.round(pct * 10)}
+        disabled={disabled}
+        onChange={(e) => onSeek(Number(e.target.value) / 1000)}
+        className="scrub"
+        style={{ ["--pct" as string]: `${pct}%` }}
+        aria-label="Seek within track"
+        aria-valuetext={`${clock(at)} of ${clock(of)}`}
+      />
+      <span className="t-ticket deck-clock">
+        {clock(at)} / {clock(of)}
+      </span>
+    </div>
+  );
+}
+
+function clock(s: number) {
+  if (!Number.isFinite(s) || s <= 0) return "0:00";
+  const m = Math.floor(s / 60);
+  return `${m}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 }
 
 /**
@@ -151,7 +201,41 @@ function DeckKey({
       aria-label={label}
       className="deck-key"
     >
-      <span aria-hidden>{children}</span>
+      {children}
     </button>
+  );
+}
+
+/* Inline SVG rather than glyphs like ⏮ and ▮▮: those pick up a different font on
+   every platform, and rendered as emoji on some. These are always identical. */
+
+function PlayIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden focusable="false">
+      <path d="M8 5.5v13l11-6.5z" fill="currentColor" />
+    </svg>
+  );
+}
+
+function PauseIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden focusable="false">
+      <rect x="7" y="5.5" width="3.6" height="13" rx="1" fill="currentColor" />
+      <rect x="13.4" y="5.5" width="3.6" height="13" rx="1" fill="currentColor" />
+    </svg>
+  );
+}
+
+function SkipIcon({ back }: { back?: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden
+      focusable="false"
+      style={back ? { transform: "scaleX(-1)" } : undefined}
+    >
+      <path d="M6 6v12l9-6z" fill="currentColor" />
+      <rect x="16.5" y="6" width="2.4" height="12" rx="1" fill="currentColor" />
+    </svg>
   );
 }

@@ -152,6 +152,34 @@ export function useRadio({
   useEffect(() => () => playerRef.current?.destroy(), []);
 
   /**
+   * Elapsed position, for the deck's progress bar.
+   *
+   * Polled rather than event-driven because the IFrame API emits no timeupdate.
+   * Twice a second is enough for a progress bar and cheap; the interval only
+   * exists while something is actually playing.
+   */
+  const [position, setPosition] = useState({ at: 0, of: 0 });
+  useEffect(() => {
+    if (status !== "playing") return;
+    const read = () => {
+      const p = playerRef.current;
+      if (!p) return;
+      setPosition({ at: p.getCurrentTime() ?? 0, of: p.getDuration() ?? 0 });
+    };
+    read();
+    const id = setInterval(read, 500);
+    return () => clearInterval(id);
+  }, [status, index]);
+
+  const seek = useCallback((fraction: number) => {
+    const p = playerRef.current;
+    if (!p) return;
+    const d = p.getDuration();
+    if (!d) return;
+    p.seekTo(Math.max(0, Math.min(1, fraction)) * d, true);
+  }, []);
+
+  /**
    * Changing the filter starts that shelf from the top, but only once the deck
    * exists — otherwise it would fight the initial cue on boarding.
    */
@@ -190,10 +218,12 @@ export function useRadio({
     status,
     note,
     volume,
+    position,
     play,
     pause,
     next,
     previous,
+    seek,
     setLevel,
     duck,
   };

@@ -85,6 +85,14 @@ export function Knob({
       onKeyDown={onKeyDown}
       style={{ opacity: disabled ? 0.45 : 1 }}
     >
+      {/* A value arc as well as the pointer: the angle alone is hard to read at
+          this size, and the arc gives the level at a glance. Drawn with a conic
+          gradient masked to a ring, so it costs no extra element. */}
+      <span
+        aria-hidden
+        className="knob-arc"
+        style={{ ["--sweep" as string]: `${(value / 100) * SWEEP}deg` }}
+      />
       <span
         className="knob-mark"
         style={{ rotate: `${START + (value / 100) * SWEEP}deg` }}

@@ -11,6 +11,10 @@ export type YTPlayer = {
   pauseVideo(): void;
   setVolume(v: number): void;
   getVolume(): number;
+  /** Both in seconds; duration is 0 until metadata has loaded. */
+  getCurrentTime(): number;
+  getDuration(): number;
+  seekTo(seconds: number, allowSeekAhead: boolean): void;
   destroy(): void;
 };
 
