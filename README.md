@@ -43,6 +43,34 @@ ALLOW_PAID_VIDEO=false
 
 Raw model output is kept in `scripts/.raw/` (gitignored) so no paid generation is ever lost.
 
+## Deploying
+
+`.github/workflows/deploy.yml` runs on every push to `main`:
+
+1. **verify** — `npm ci`, `tsc --noEmit`, `next build`. Also runs on pull requests, and
+   needs no secrets, so a PR is checked even when it cannot deploy.
+2. **deploy** — `vercel pull` → `vercel build --prod` → `vercel deploy --prebuilt --prod`.
+   Only on a push to `main`, and only if verify passed.
+
+Building in CI rather than on Vercel means a broken build fails the check instead of
+failing the deployment.
+
+Three repository secrets are required (Settings → Secrets and variables → Actions):
+
+| Secret | Where to get it |
+|---|---|
+| `VERCEL_TOKEN` | Vercel → Account Settings → Tokens |
+| `VERCEL_ORG_ID` | `vercel link`, then read `.vercel/project.json` (`orgId`) |
+| `VERCEL_PROJECT_ID` | same file (`projectId`) |
+
+`vercel.json` sets `git.deploymentEnabled.main` to `false`. **This is load-bearing.**
+Vercel's Git integration deploys on push by itself, so without it every push would deploy
+twice — once from the integration and once from the workflow — and the two would race to
+production. The setting only affects Git-triggered deploys; CLI deploys still work.
+
+No API key is needed to build or deploy. All media is committed and generation is a
+development-only step.
+
 ## Things that look odd but are deliberate
 
 **Only the monsoon mood has video.** Golden Hour and Last Local scroll a mirror-doubled

@@ -20,3 +20,6 @@ scripts/.shots/
 *.tsbuildinfo
 next-env.d.ts
 .DS_Store
+
+# Written by `vercel link` / `vercel pull`; contains project identifiers.
+.vercel/
